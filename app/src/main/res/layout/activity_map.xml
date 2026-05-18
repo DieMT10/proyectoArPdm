@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="240dp"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:background="#FFFFFF"
+        android:elevation="15dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Guía Educativa AR"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#111111" />
+
+        <TextView
+            android:id="@+id/txtEstadoGPS"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Calculando distancia..."
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#0D47A1"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:id="@+id/txtDistancia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Distancia: -- metros"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginTop="4dp" />
+
+        <Button
+            android:id="@+id/btnAbrirAR"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="🚀 Abrir Experiencia AR"
+            android:textAllCaps="false"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#0D47A1"
+            android:layout_marginTop="18dp" />
+
+    </LinearLayout>
+
+</FrameLayout>

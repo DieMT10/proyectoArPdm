@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F5">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- IMAGEN -->
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_launcher" />
+
+        <!-- TITULO -->
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Punto Educativo"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#111111"
+            android:layout_marginTop="18dp" />
+
+        <!-- DESCRIPCION -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Este punto educativo permite explorar contenido interactivo mediante realidad aumentada, GPS y modelos 3D."
+            android:textSize="16sp"
+            android:textColor="#555555"
+            android:layout_marginTop="12dp" />
+
+        <!-- DISTANCIA -->
+
+        <TextView
+            android:id="@+id/txtDistanciaDetalle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📍 Distancia: 30 metros"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#0D47A1"
+            android:layout_marginTop="18dp" />
+
+        <!-- ESTADO -->
+
+        <TextView
+            android:id="@+id/txtEstadoDetalle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✅ Experiencia AR disponible"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#2E7D32"
+            android:layout_marginTop="10dp" />
+
+        <!-- BOTON -->
+
+        <Button
+            android:id="@+id/btnIniciarAR"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="🚀 Iniciar Experiencia AR"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#0D47A1"
+            android:layout_marginTop="24dp" />
+
+    </LinearLayout>
+
+</ScrollView>
