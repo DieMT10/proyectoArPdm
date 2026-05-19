@@ -435,13 +435,17 @@ public class Shader implements Closeable {
       // part of the program.
       ArrayList<Integer> obsoleteEntries = new ArrayList<>(uniforms.size());
       for (Map.Entry<Integer, Uniform> entry : uniforms.entrySet()) {
+        int location = entry.getKey();
+        if (location == -1) {
+          continue;
+        }
         try {
-          entry.getValue().use(entry.getKey());
+          entry.getValue().use(location);
           if (!(entry.getValue() instanceof UniformTexture)) {
-            obsoleteEntries.add(entry.getKey());
+            obsoleteEntries.add(location);
           }
         } catch (GLException e) {
-          String name = uniformNames.get(entry.getKey());
+          String name = uniformNames.get(location);
           throw new IllegalArgumentException("Error setting uniform `" + name + "'", e);
         }
       }
@@ -601,9 +605,9 @@ public class Shader implements Closeable {
       return locationObject;
     }
     int location = GLES30.glGetUniformLocation(programId, name);
-    GLError.maybeThrowGLException("Failed to find uniform", "glGetUniformLocation");
+    // Silent failure if uniform is not found - common in shader switching
     if (location == -1) {
-      throw new IllegalArgumentException("Shader uniform does not exist: " + name);
+      return -1;
     }
     uniformLocations.put(name, Integer.valueOf(location));
     uniformNames.put(Integer.valueOf(location), name);

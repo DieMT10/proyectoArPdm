@@ -31,4 +31,46 @@
     <item>Enable Instant Placement</item>
   </string-array>
 
+  <string name="label_scale_y">⇕</string>
+  <string name="decrease_size">Disminuir tamaño</string>
+  <string name="increase_size">Aumentar tamaño</string>
+  <string name="label_y">Y</string>
+  <string name="rotate_y_left">Rotar Y izquierda</string>
+  <string name="rotate_y_right">Rotar Y derecha</string>
+  <string name="label_x">X</string>
+  <string name="rotate_x_up">Rotar X arriba</string>
+  <string name="rotate_x_down">Rotar X abajo</string>
+  <string name="label_z">Z</string>
+  <string name="rotate_z_left">Rotar Z izquierda</string>
+  <string name="rotate_z_right">Rotar Z derecha</string>
+  <string name="label_tx">TX</string>
+  <string name="move_x_minus">Mover X -</string>
+  <string name="move_x_plus">Mover X +</string>
+  <string name="label_ty">TY</string>
+  <string name="move_y_minus">Mover Y -</string>
+  <string name="move_y_plus">Mover Y +</string>
+  <string name="label_tz">TZ</string>
+  <string name="move_z_minus">Mover Z -</string>
+  <string name="move_z_plus">Mover Z +</string>
+  <string name="reset_coords">Resetear coordenadas</string>
+  <string name="label_reset">Reset</string>
+  <string name="slide_page_title">Página %1$d</string>
+  <string name="slide_content_default">Contenido de la diapositiva&#8230;</string>
+  <string name="previous">Anterior</string>
+  <string name="next">Siguiente</string>
+  <string name="close">Cerrar</string>
+  <string name="settings_description">Settings</string>
+
+  <string name="move_x_pos">Mover X positivo</string>
+  <string name="move_x_neg">Mover X negativo</string>
+  <string name="move_y_pos">Mover Y arriba</string>
+  <string name="move_y_neg">Mover Y abajo</string>
+  <string name="move_z_pos">Alejar Z</string>
+  <string name="move_z_neg">Acercar Z</string>
+  <string name="rotate_left">Rotar Izquierda</string>
+  <string name="rotate_right">Rotar Derecha</string>
+  <string name="scale_up">Aumentar Escala</string>
+  <string name="scale_down">Disminuir Escala</string>
+  <string name="slide_page_indicator">Página %1$s de %2$s</string>
+
 </resources>

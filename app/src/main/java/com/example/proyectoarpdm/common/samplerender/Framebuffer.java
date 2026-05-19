@@ -143,6 +143,27 @@ public class Framebuffer implements Closeable {
         GLES30.GL_FLOAT,
         /*pixels=*/ null);
     GLError.maybeThrowGLException("Failed to specify depth texture format", "glTexImage2D");
+
+    // ── Re-adjuntar las texturas al framebuffer después de redimensionar ──
+    if (framebufferId[0] != 0) {
+      GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, framebufferId[0]);
+      GLError.maybeThrowGLException("Failed to bind framebuffer for resize", "glBindFramebuffer");
+      GLES30.glFramebufferTexture2D(
+          GLES30.GL_FRAMEBUFFER,
+          GLES30.GL_COLOR_ATTACHMENT0,
+          GLES30.GL_TEXTURE_2D,
+          colorTexture.getTextureId(),
+          /*level=*/ 0);
+      GLError.maybeThrowGLException("Failed to re-attach color texture", "glFramebufferTexture2D");
+      GLES30.glFramebufferTexture2D(
+          GLES30.GL_FRAMEBUFFER,
+          GLES30.GL_DEPTH_ATTACHMENT,
+          GLES30.GL_TEXTURE_2D,
+          depthTexture.getTextureId(),
+          /*level=*/ 0);
+      GLError.maybeThrowGLException("Failed to re-attach depth texture", "glFramebufferTexture2D");
+      GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0);
+    }
   }
 
   /** Returns the color texture associated with this framebuffer. */

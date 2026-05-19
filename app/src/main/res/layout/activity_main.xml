@@ -22,8 +22,8 @@
 
   <android.opengl.GLSurfaceView
       android:id="@+id/surfaceview"
-      android:layout_width="fill_parent"
-      android:layout_height="fill_parent"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
       android:layout_gravity="top"/>
 
   <ImageButton
@@ -34,6 +34,265 @@
       android:layout_alignParentTop="true"
       android:layout_margin="25dp"
       android:src="@drawable/ic_settings"
-      android:background="@android:color/transparent"/>
+      android:background="@android:color/transparent"
+      android:contentDescription="@string/settings_description"/>
+
+  <!-- XYZ Translation Controls -->
+  <LinearLayout
+      android:id="@+id/xyz_controls"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_alignParentBottom="true"
+      android:layout_centerHorizontal="true"
+      android:layout_marginBottom="88dp"
+      android:orientation="horizontal"
+      android:background="@drawable/round_background_controls"
+      android:padding="8dp">
+
+    <!-- Eje X -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginEnd="8dp">
+
+      <TextView
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:text="@string/label_x"
+          android:textSize="11sp"
+          android:gravity="center"/>
+
+      <LinearLayout
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/btn_move_x_neg"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_add"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:contentDescription="@string/move_x_neg"/>
+
+        <ImageButton
+            android:id="@+id/btn_move_x_pos"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_add"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:contentDescription="@string/move_x_pos"/>
+      </LinearLayout>
+    </LinearLayout>
+
+    <!-- Eje Y -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginEnd="8dp">
+
+      <TextView
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:text="@string/label_y"
+          android:textSize="11sp"
+          android:gravity="center"/>
+
+      <LinearLayout
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/btn_move_y_pos"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_add"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:contentDescription="@string/move_y_pos"/>
+
+        <ImageButton
+            android:id="@+id/btn_move_y_neg"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_add"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:contentDescription="@string/move_y_neg"/>
+      </LinearLayout>
+    </LinearLayout>
+
+    <!-- Eje Z -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center">
+
+      <TextView
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:text="@string/label_z"
+          android:textSize="11sp"
+          android:gravity="center"/>
+
+      <LinearLayout
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/btn_move_z_neg"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_remove"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:contentDescription="@string/move_z_neg"/>
+
+        <ImageButton
+            android:id="@+id/btn_move_z_pos"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_add"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:contentDescription="@string/move_z_pos"/>
+      </LinearLayout>
+    </LinearLayout>
+
+  </LinearLayout>
+  <!-- Model Control Buttons -->
+  <LinearLayout
+      android:id="@+id/model_controls"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_alignParentBottom="true"
+      android:layout_centerHorizontal="true"
+      android:layout_marginBottom="24dp"
+      android:orientation="horizontal"
+      android:background="@drawable/round_background_controls"
+      android:padding="8dp">
+
+    <ImageButton
+        android:id="@+id/btn_rotate_left"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_rotate"
+        android:rotationY="180"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="8dp"
+        android:contentDescription="@string/rotate_left"/>
+
+    <ImageButton
+        android:id="@+id/btn_scale_down"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_remove"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="8dp"
+        android:contentDescription="@string/scale_down"/>
+
+    <ImageButton
+        android:id="@+id/btn_scale_up"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_add"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="8dp"
+        android:contentDescription="@string/scale_up"/>
+
+    <ImageButton
+        android:id="@+id/btn_rotate_right"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_rotate"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="8dp"
+        android:contentDescription="@string/rotate_right"/>
+
+  </LinearLayout>
+
+  <!-- Slideshow Overlay -->
+  <LinearLayout
+      android:id="@+id/slideshow_overlay"
+      android:layout_width="300dp"
+      android:layout_height="400dp"
+      android:layout_centerInParent="true"
+      android:background="#DDFFFFFF"
+      android:orientation="vertical"
+      android:padding="16dp"
+      android:visibility="gone"
+      android:elevation="8dp">
+
+    <TextView
+        android:id="@+id/slide_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/slide_page_title"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="16dp"
+        android:textColor="#000000"/>
+
+    <ImageView
+        android:id="@+id/slide_image"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scaleType="fitCenter"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="@null"/>
+
+    <TextView
+        android:id="@+id/slide_content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/slide_page_indicator"
+        android:gravity="center"
+        android:textColor="#333333"
+        android:layout_marginBottom="16dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        style="?android:attr/buttonBarStyle">
+
+      <Button
+          android:id="@+id/btn_prev"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/previous"
+          android:layout_marginEnd="8dp"
+          style="?android:attr/buttonBarButtonStyle"/>
+
+      <Button
+          android:id="@+id/btn_next"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/next"
+          android:layout_marginStart="8dp"
+          style="?android:attr/buttonBarButtonStyle"/>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_close"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/close"
+        android:layout_marginTop="8dp"
+        style="?android:attr/borderlessButtonStyle"/>
+
+  </LinearLayout>
 
 </RelativeLayout>
