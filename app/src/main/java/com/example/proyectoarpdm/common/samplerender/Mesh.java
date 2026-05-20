@@ -307,8 +307,26 @@ public class Mesh implements Closeable {
 
         Mesh mesh = new Mesh(render, primitiveMode, indexBuffer, vertexBuffers);
 
-        // Try to extract texture if available
+        // Try to extract material color or texture
         try {
+            // 1. Check for material color
+            float[] baseColorFactor = {1.0f, 1.0f, 1.0f, 1.0f}; // Default white
+            int materialIdx = primitive0.optInt("material", -1);
+            if (materialIdx != -1 && json.has("materials")) {
+                JSONObject material = json.getJSONArray("materials").getJSONObject(materialIdx);
+                if (material.has("pbrMetallicRoughness")) {
+                    JSONObject pbr = material.getJSONObject("pbrMetallicRoughness");
+                    if (pbr.has("baseColorFactor")) {
+                        JSONArray colorArr = pbr.getJSONArray("baseColorFactor");
+                        for (int i = 0; i < 4; i++) {
+                            baseColorFactor[i] = (float) colorArr.getDouble(i);
+                        }
+                    }
+                }
+            }
+
+            // 2. Check for texture
+            boolean textureFound = false;
             if (json.has("images") && json.getJSONArray("images").length() > 0) {
                 JSONObject image0 = json.getJSONArray("images").getJSONObject(0);
                 if (image0.has("bufferView")) {
@@ -326,11 +344,24 @@ public class Mesh implements Closeable {
                     Bitmap bitmap = BitmapFactory.decodeByteArray(imgData, 0, length);
                     if (bitmap != null) {
                         mesh.setModelTexture(Texture.createFromBitmap(render, bitmap, Texture.WrapMode.REPEAT, Texture.ColorFormat.SRGB));
+                        textureFound = true;
                     }
                 }
             }
+
+            // 3. Fallback to baseColorFactor if no texture was found
+            if (!textureFound) {
+                Bitmap colorBitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+                int r = (int) (baseColorFactor[0] * 255);
+                int g = (int) (baseColorFactor[1] * 255);
+                int b = (int) (baseColorFactor[2] * 255);
+                int a = (int) (baseColorFactor[3] * 255);
+                colorBitmap.setPixel(0, 0, android.graphics.Color.argb(a, r, g, b));
+                mesh.setModelTexture(Texture.createFromBitmap(render, colorBitmap, Texture.WrapMode.CLAMP_TO_EDGE, Texture.ColorFormat.SRGB));
+            }
+
         } catch (Exception e) {
-            Log.e(TAG, "Could not extract texture from glTF", e);
+            Log.e(TAG, "Could not extract color or texture from glTF", e);
         }
 
         return mesh;

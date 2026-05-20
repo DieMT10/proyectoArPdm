@@ -389,7 +389,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       virtualObjectShader.setTexture("u_RoughnessMetallicAmbientOcclusionTexture", fallbackWhiteTexture);
 
       if (virtualObjectMesh != null && virtualObjectMesh.getModelTexture() != null) {
+          Log.d(TAG, "Usando textura/color del modelo para Albedo");
           virtualObjectShader.setTexture("u_AlbedoTexture", virtualObjectMesh.getModelTexture());
+      } else {
+          Log.d(TAG, "No se encontró color en el modelo, usando blanco por defecto");
+          virtualObjectShader.setTexture("u_AlbedoTexture", fallbackWhiteTexture);
       }
 
     } catch (IOException e) {

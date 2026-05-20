@@ -35,14 +35,24 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.gms.maps.model.Marker;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.example.proyectoarpdm.models.ARModel;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     private static final String TAG = "MapActivity";
     private static final int LOCATION_PERMISSION_REQUEST = 1001;
@@ -52,6 +62,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private TextView txtEstadoGPS, txtDistancia;
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
+    private DatabaseReference databaseReference;
+    private Map<Marker, ARModel> markerModelMap = new HashMap<>();
 
     private String modelId, modelName, modelUrl;
     private ArrayList<String> slides;
@@ -95,6 +107,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         btnAbrirAR.setAlpha(0.5f);
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        databaseReference = FirebaseDatabase.getInstance().getReference("models");
 
         btnAbrirAR.setOnClickListener(v -> {
             if (isCloseEnough) {
@@ -123,6 +136,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             Log.e(TAG, "Error: No se encontró el fragmento con ID R.id.map");
         }
 
+        loadLessonsFromFirebase();
+
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setSelectedItemId(R.id.nav_map);
         bottomNavigationView.setOnItemSelectedListener(item -> {
@@ -137,23 +152,98 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         });
     }
 
+    private void loadLessonsFromFirebase() {
+        databaseReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (mMap == null) return;
+                
+                // Limpiar marcadores previos (excepto la ubicación del usuario que es nativa)
+                for (Marker marker : markerModelMap.keySet()) {
+                    marker.remove();
+                }
+                markerModelMap.clear();
+
+                for (DataSnapshot postSnapshot : snapshot.getChildren()) {
+                    ARModel model = postSnapshot.getValue(ARModel.class);
+                    if (model != null) {
+                        model.setId(postSnapshot.getKey());
+                        String latStr = model.getLatitud();
+                        String lonStr = model.getLongitud();
+
+                        if (!latStr.isEmpty() && !lonStr.isEmpty()) {
+                            try {
+                                double lat = Double.parseDouble(latStr);
+                                double lon = Double.parseDouble(lonStr);
+                                LatLng pos = new LatLng(lat, lon);
+
+                                Marker marker = mMap.addMarker(new MarkerOptions()
+                                        .position(pos)
+                                        .title(model.getName() != null ? model.getName() : postSnapshot.getKey())
+                                        .snippet("Toca para ver detalles"));
+                                
+                                markerModelMap.put(marker, model);
+                            } catch (NumberFormatException e) {
+                                Log.e(TAG, "Error de formato en coordenadas para: " + postSnapshot.getKey());
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Error cargando lecciones: " + error.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public boolean onMarkerClick(@NonNull Marker marker) {
+        ARModel model = markerModelMap.get(marker);
+        if (model != null) {
+            // Actualizar el destino actual al marker seleccionado
+            puntoDestino = marker.getPosition();
+            modelId = model.getId();
+            modelName = model.getName();
+            modelUrl = model.getModelUrl();
+            slides = new ArrayList<>(model.getSlides());
+            
+            marker.showInfoWindow();
+            
+            // Forzar recálculo de distancia con la nueva lección
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
+                    if (location != null) {
+                        calcularDistancia(location);
+                    }
+                });
+            }
+            
+            Toast.makeText(this, "Objetivo: " + modelName, Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         Log.d(TAG, "onMapReady: El mapa está listo");
         mMap = googleMap;
         
+        mMap.setOnMarkerClickListener(this);
+        
         // Configuración visual del mapa
         mMap.getUiSettings().setZoomControlsEnabled(true);
         mMap.getUiSettings().setMyLocationButtonEnabled(true);
         
-        mMap.addMarker(new MarkerOptions()
-                .position(puntoDestino)
-                .title(modelName != null ? modelName : "Punto Educativo")
-                .snippet("Zona interactiva de RA"));
-        
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(puntoDestino, 15));
+        // Mover cámara a la ubicación por defecto o la recibida
+        if (puntoDestino != null) {
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(puntoDestino, 15));
+        }
         
         startLocationUpdates();
+        // Los marcadores se cargarán automáticamente a través del listener de Firebase en onCreate
     }
 
     @SuppressWarnings("MissingPermission")
@@ -176,15 +266,23 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     private void calcularDistancia(Location ubicacionUsuario) {
+        if (puntoDestino == null) return;
+
         Location ubicacionPunto = new Location("puntoDestino");
         ubicacionPunto.setLatitude(puntoDestino.latitude);
         ubicacionPunto.setLongitude(puntoDestino.longitude);
 
         float distancia = ubicacionUsuario.distanceTo(ubicacionPunto);
-        txtDistancia.setText(String.format("Distancia: %d metros", Math.round(distancia)));
+        
+        // Mostrar coordenadas y distancia
+        String info = String.format("Mi ubicación: %.4f, %.4f\nDistancia: %d metros", 
+                ubicacionUsuario.getLatitude(), 
+                ubicacionUsuario.getLongitude(), 
+                Math.round(distancia));
+        txtDistancia.setText(info);
 
         if (distancia <= 50) {
-            txtEstadoGPS.setText("¡Llegaste al punto educativo!");
+            txtEstadoGPS.setText("¡Estás cerca de: " + (modelName != null ? modelName : "el punto") + "!");
             if (!isCloseEnough && !hasVibratedForThisPoint) {
                 vibrarYNotificar();
             }
@@ -192,7 +290,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             btnAbrirAR.setEnabled(true);
             btnAbrirAR.setAlpha(1.0f);
         } else {
-            txtEstadoGPS.setText("Buscando punto educativo...");
+            txtEstadoGPS.setText("Objetivo: " + (modelName != null ? modelName : "Selecciona un punto"));
             isCloseEnough = false;
             btnAbrirAR.setEnabled(false);
             btnAbrirAR.setAlpha(0.5f);

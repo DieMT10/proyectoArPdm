@@ -97,7 +97,8 @@ public class ModelListActivity extends AppCompatActivity implements ModelAdapter
                         }
 
                         if (postSnapshot.hasChild("slidesUrl")) {
-                            model.setSlidesUrl(postSnapshot.child("slidesUrl").getValue(String.class));
+                            Object urlVal = postSnapshot.child("slidesUrl").getValue();
+                            model.setSlidesUrl(urlVal != null ? String.valueOf(urlVal) : "");
                         }
                         
                         modelList.add(model);

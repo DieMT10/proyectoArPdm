@@ -7,8 +7,9 @@ public class ARModel {
     private String id;
     private String name;
     private String modelUrl;
-    private String latitud;
-    private String longitud;
+    private Object latitud;
+    private Object longitud;
+    private String imagen;
     private Object slides; // Cambiado a Object para evitar errores de tipo en Firebase
     private String slidesUrl;
 
@@ -25,11 +26,18 @@ public class ARModel {
     public String getModelUrl() { return modelUrl; }
     public void setModelUrl(String modelUrl) { this.modelUrl = modelUrl; }
 
-    public String getLatitud() { return latitud; }
-    public void setLatitud(String latitud) { this.latitud = latitud; }
+    public String getLatitud() { 
+        return latitud != null ? String.valueOf(latitud) : ""; 
+    }
+    public void setLatitud(Object latitud) { this.latitud = latitud; }
 
-    public String getLongitud() { return longitud; }
-    public void setLongitud(String longitud) { this.longitud = longitud; }
+    public String getLongitud() { 
+        return longitud != null ? String.valueOf(longitud) : ""; 
+    }
+    public void setLongitud(Object longitud) { this.longitud = longitud; }
+
+    public String getImagen() { return imagen; }
+    public void setImagen(String imagen) { this.imagen = imagen; }
 
     public List<String> getSlides() {
         if (slides instanceof List) {
