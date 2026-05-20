@@ -21,7 +21,7 @@ import androidx.core.app.ActivityCompat;
 
 import com.example.proyectoarpdm.R;
 import com.example.proyectoarpdm.Activities.ModelListActivity;
-import com.example.proyectoarpdm.Activities.modelARActivity;
+import com.example.proyectoarpdm.helloar.HelloArActivity;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -45,12 +45,21 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.example.proyectoarpdm.models.ARModel;
 
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
+import androidx.core.content.ContextCompat;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
+import androidx.annotation.Nullable;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
@@ -64,161 +73,191 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private LocationCallback locationCallback;
     private DatabaseReference databaseReference;
     private Map<Marker, ARModel> markerModelMap = new HashMap<>();
+    private List<ARModel> tempModelList = new ArrayList<>();
 
-    private String modelId, modelName, modelUrl;
+    private String modelId, modelName, modelUrl, slidesUrl;
     private ArrayList<String> slides;
     private LatLng puntoDestino;
     private boolean isCloseEnough = false;
     private boolean hasVibratedForThisPoint = false;
+    private boolean isFirstLocationUpdate = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
-        Log.d(TAG, "onCreate: Iniciando MapActivity");
-
-        // Recibir datos del modelo
-        modelId = getIntent().getStringExtra("model_id");
-        modelName = getIntent().getStringExtra("model_name");
-        modelUrl = getIntent().getStringExtra("model_url");
-        String lat = getIntent().getStringExtra("latitud");
-        String lon = getIntent().getStringExtra("longitud");
-        slides = getIntent().getStringArrayListExtra("slides");
-
-        // Coordenadas por defecto (San Salvador por ejemplo) si no vienen en el intent
-        if (lat != null && lon != null && !lat.trim().isEmpty() && !lon.trim().isEmpty()) {
-            try {
-                puntoDestino = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
-                Log.d(TAG, "Destino recibido: " + lat + ", " + lon);
-            } catch (NumberFormatException e) {
-                puntoDestino = new LatLng(13.6893, -89.1872); 
-            }
-        } else {
-            Log.d(TAG, "Sin coordenadas en intent, usando ubicación por defecto");
-            puntoDestino = new LatLng(13.6893, -89.1872); 
-        }
-
         btnAbrirAR = findViewById(R.id.btnAbrirAR);
         txtEstadoGPS = findViewById(R.id.txtEstadoGPS);
         txtDistancia = findViewById(R.id.txtDistancia);
 
-        btnAbrirAR.setEnabled(false);
-        btnAbrirAR.setAlpha(0.5f);
-
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         databaseReference = FirebaseDatabase.getInstance().getReference("models");
 
-        btnAbrirAR.setOnClickListener(v -> {
-            if (isCloseEnough) {
-                downloadAndOpenModel();
-            } else {
-                Toast.makeText(this, "Acércate más para activar la experiencia", Toast.LENGTH_SHORT).show();
-            }
-        });
+        setupNavigation();
+        initLocationCallback();
+        
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+        if (mapFragment != null) {
+            mapFragment.getMapAsync(this);
+        }
 
+        // Cargar datos de Firebase inmediatamente
+        loadLessonsFromFirebase();
+
+        btnAbrirAR.setOnClickListener(v -> {
+            if (isCloseEnough) downloadAndOpenModel();
+            else Toast.makeText(this, "Acércate a menos de 50m", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void setupNavigation() {
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+        bottomNavigationView.setSelectedItemId(R.id.nav_map);
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            if (item.getItemId() == R.id.nav_models) {
+                startActivity(new Intent(this, ModelListActivity.class));
+                finish();
+                return true;
+            }
+            return item.getItemId() == R.id.nav_map;
+        });
+    }
+
+    private void initLocationCallback() {
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(@NonNull LocationResult locationResult) {
                 for (Location location : locationResult.getLocations()) {
-                    if (location != null) {
-                        calcularDistancia(location);
-                    }
+                    if (location != null) calcularDistancia(location);
                 }
             }
         };
-
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
-        if (mapFragment != null) {
-            Log.d(TAG, "Cargando fragmento de mapa...");
-            mapFragment.getMapAsync(this);
-        } else {
-            Log.e(TAG, "Error: No se encontró el fragmento con ID R.id.map");
-        }
-
-        loadLessonsFromFirebase();
-
-        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
-        bottomNavigationView.setSelectedItemId(R.id.nav_map);
-        bottomNavigationView.setOnItemSelectedListener(item -> {
-            int itemId = item.getItemId();
-            if (itemId == R.id.nav_models) {
-                startActivity(new Intent(this, ModelListActivity.class));
-                overridePendingTransition(0, 0);
-                finish();
-                return true;
-            }
-            return itemId == R.id.nav_map;
-        });
     }
 
     private void loadLessonsFromFirebase() {
         databaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (mMap == null) return;
-                
-                // Limpiar marcadores previos (excepto la ubicación del usuario que es nativa)
-                for (Marker marker : markerModelMap.keySet()) {
-                    marker.remove();
-                }
-                markerModelMap.clear();
-
+                tempModelList.clear();
                 for (DataSnapshot postSnapshot : snapshot.getChildren()) {
                     ARModel model = postSnapshot.getValue(ARModel.class);
                     if (model != null) {
                         model.setId(postSnapshot.getKey());
-                        String latStr = model.getLatitud();
-                        String lonStr = model.getLongitud();
-
-                        if (!latStr.isEmpty() && !lonStr.isEmpty()) {
-                            try {
-                                double lat = Double.parseDouble(latStr);
-                                double lon = Double.parseDouble(lonStr);
-                                LatLng pos = new LatLng(lat, lon);
-
-                                Marker marker = mMap.addMarker(new MarkerOptions()
-                                        .position(pos)
-                                        .title(model.getName() != null ? model.getName() : postSnapshot.getKey())
-                                        .snippet("Toca para ver detalles"));
-                                
-                                markerModelMap.put(marker, model);
-                            } catch (NumberFormatException e) {
-                                Log.e(TAG, "Error de formato en coordenadas para: " + postSnapshot.getKey());
+                        
+                        // INTELIGENCIA: Si "slides" contiene una URL, usarla como slidesUrl
+                        List<String> slidesContent = model.getSlides();
+                        if (!slidesContent.isEmpty()) {
+                            String first = slidesContent.get(0);
+                            if (first != null && (first.startsWith("http") || first.startsWith("gs://"))) {
+                                model.setSlidesUrl(first);
+                                model.setSlides(new ArrayList<String>()); 
+                                Log.d(TAG, "Detectada URL en slides para mapa: " + first);
                             }
                         }
+
+                        if (postSnapshot.hasChild("slidesUrl")) {
+                            Object urlVal = postSnapshot.child("slidesUrl").getValue();
+                            model.setSlidesUrl(urlVal != null ? String.valueOf(urlVal) : "");
+                        }
+
+                        tempModelList.add(model);
                     }
                 }
+                // Si el mapa ya está listo, dibujar ahora mismo
+                if (mMap != null) updateMapMarkers();
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Log.e(TAG, "Error cargando lecciones: " + error.getMessage());
+                Log.e(TAG, "Error Firebase: " + error.getMessage());
             }
         });
+    }
+
+    private void updateMapMarkers() {
+        if (mMap == null) return;
+        mMap.clear();
+        markerModelMap.clear();
+
+        for (ARModel model : tempModelList) {
+            String latStr = model.getLatitud();
+            String lonStr = model.getLongitud();
+
+            if (!latStr.isEmpty() && !lonStr.isEmpty()) {
+                try {
+                    LatLng pos = new LatLng(Double.parseDouble(latStr), Double.parseDouble(lonStr));
+                    
+                    // Crear marcador con icono personalizado
+                    MarkerOptions options = new MarkerOptions()
+                            .position(pos)
+                            .title(model.getName() != null ? model.getName() : model.getId())
+                            .snippet("Objetivo educativo");
+
+                    // Intentar cargar la imagen personalizada como icono
+                    if (model.getImagen() != null && !model.getImagen().isEmpty()) {
+                        Glide.with(this)
+                                .asBitmap()
+                                .load(model.getImagen())
+                                .override(100, 100) // Tamaño del icono
+                                .into(new CustomTarget<Bitmap>() {
+                                    @Override
+                                    public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                                        Marker marker = mMap.addMarker(options.icon(BitmapDescriptorFactory.fromBitmap(resource)));
+                                        if (marker != null) markerModelMap.put(marker, model);
+                                    }
+                                    @Override
+                                    public void onLoadCleared(@Nullable Drawable placeholder) {}
+                                });
+                    } else {
+                        // Fallback a icono por defecto si no hay imagen
+                        Marker marker = mMap.addMarker(options);
+                        if (marker != null) markerModelMap.put(marker, model);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error en coordenadas de " + model.getId());
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        mMap = googleMap;
+        mMap.setOnMarkerClickListener(this);
+        mMap.getUiSettings().setZoomControlsEnabled(true);
+        mMap.getUiSettings().setMyLocationButtonEnabled(true);
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            mMap.setMyLocationEnabled(true);
+            // Intentar obtener la última ubicación conocida para centrar rápido
+            fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
+                if (location != null && isFirstLocationUpdate) {
+                    LatLng userLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLatLng, 15));
+                    isFirstLocationUpdate = false;
+                }
+            });
+        } else {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST);
+        }
+
+        updateMapMarkers(); // Dibujar lo que ya se haya cargado de Firebase
     }
 
     @Override
     public boolean onMarkerClick(@NonNull Marker marker) {
         ARModel model = markerModelMap.get(marker);
         if (model != null) {
-            // Actualizar el destino actual al marker seleccionado
             puntoDestino = marker.getPosition();
             modelId = model.getId();
             modelName = model.getName();
             modelUrl = model.getModelUrl();
+            slidesUrl = model.getSlidesUrl();
             slides = new ArrayList<>(model.getSlides());
             
             marker.showInfoWindow();
-            
-            // Forzar recálculo de distancia con la nueva lección
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
-                    if (location != null) {
-                        calcularDistancia(location);
-                    }
-                });
-            }
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(puntoDestino, 16));
             
             Toast.makeText(this, "Objetivo: " + modelName, Toast.LENGTH_SHORT).show();
             return true;
@@ -226,71 +265,35 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         return false;
     }
 
-    @Override
-    public void onMapReady(@NonNull GoogleMap googleMap) {
-        Log.d(TAG, "onMapReady: El mapa está listo");
-        mMap = googleMap;
-        
-        mMap.setOnMarkerClickListener(this);
-        
-        // Configuración visual del mapa
-        mMap.getUiSettings().setZoomControlsEnabled(true);
-        mMap.getUiSettings().setMyLocationButtonEnabled(true);
-        
-        // Mover cámara a la ubicación por defecto o la recibida
-        if (puntoDestino != null) {
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(puntoDestino, 15));
+    private void calcularDistancia(Location miUbi) {
+        if (mMap != null && isFirstLocationUpdate) {
+            LatLng userLatLng = new LatLng(miUbi.getLatitude(), miUbi.getLongitude());
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLatLng, 15));
+            isFirstLocationUpdate = false;
         }
-        
-        startLocationUpdates();
-        // Los marcadores se cargarán automáticamente a través del listener de Firebase en onCreate
-    }
 
-    @SuppressWarnings("MissingPermission")
-    private void startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST);
+        if (puntoDestino == null) {
+            txtDistancia.setText(String.format("Tu ubicación: %.4f, %.4f", miUbi.getLatitude(), miUbi.getLongitude()));
+            txtEstadoGPS.setText("Selecciona un punto en el mapa");
             return;
         }
 
-        if (mMap != null) {
-            mMap.setMyLocationEnabled(true);
-            Log.d(TAG, "Ubicación en el mapa activada");
-        }
+        Location target = new Location("target");
+        target.setLatitude(puntoDestino.latitude);
+        target.setLongitude(puntoDestino.longitude);
 
-        LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000)
-                .setMinUpdateIntervalMillis(2000)
-                .build();
+        float dist = miUbi.distanceTo(target);
+        txtDistancia.setText(String.format("GPS: %.4f, %.4f | Distancia: %dm", 
+                miUbi.getLatitude(), miUbi.getLongitude(), Math.round(dist)));
 
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
-    }
-
-    private void calcularDistancia(Location ubicacionUsuario) {
-        if (puntoDestino == null) return;
-
-        Location ubicacionPunto = new Location("puntoDestino");
-        ubicacionPunto.setLatitude(puntoDestino.latitude);
-        ubicacionPunto.setLongitude(puntoDestino.longitude);
-
-        float distancia = ubicacionUsuario.distanceTo(ubicacionPunto);
-        
-        // Mostrar coordenadas y distancia
-        String info = String.format("Mi ubicación: %.4f, %.4f\nDistancia: %d metros", 
-                ubicacionUsuario.getLatitude(), 
-                ubicacionUsuario.getLongitude(), 
-                Math.round(distancia));
-        txtDistancia.setText(info);
-
-        if (distancia <= 50) {
-            txtEstadoGPS.setText("¡Estás cerca de: " + (modelName != null ? modelName : "el punto") + "!");
-            if (!isCloseEnough && !hasVibratedForThisPoint) {
-                vibrarYNotificar();
-            }
+        if (dist <= 50) {
+            txtEstadoGPS.setText("¡Llegaste a: " + modelName + "!");
+            if (!isCloseEnough && !hasVibratedForThisPoint) vibrarYNotificar();
             isCloseEnough = true;
             btnAbrirAR.setEnabled(true);
             btnAbrirAR.setAlpha(1.0f);
         } else {
-            txtEstadoGPS.setText("Objetivo: " + (modelName != null ? modelName : "Selecciona un punto"));
+            txtEstadoGPS.setText("Dirígete a: " + modelName);
             isCloseEnough = false;
             btnAbrirAR.setEnabled(false);
             btnAbrirAR.setAlpha(0.5f);
@@ -300,93 +303,110 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     private void vibrarYNotificar() {
         hasVibratedForThisPoint = true;
-        Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        if (vibrator != null && vibrator.hasVibrator()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
-            } else {
-                vibrator.vibrate(500);
-            }
+        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        if (v != null && v.hasVibrator()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) v.vibrate(VibrationEffect.createOneShot(500, 255));
+            else v.vibrate(500);
         }
-
         new AlertDialog.Builder(this)
-                .setTitle("¡Punto detectado!")
-                .setMessage("¿Deseas abrir la cámara RA para ver el contenido?")
-                .setPositiveButton("Abrir Cámara", (dialog, which) -> downloadAndOpenModel())
-                .setNegativeButton("Más tarde", null)
-                .show();
+                .setTitle("¡Llegaste!")
+                .setMessage("¿Abrir contenido de " + modelName + "?")
+                .setPositiveButton("Abrir RA", (d, w) -> downloadAndOpenModel())
+                .setNegativeButton("Luego", null).show();
     }
 
     private void downloadAndOpenModel() {
-        if (modelUrl == null || modelUrl.isEmpty()) {
-            Toast.makeText(this, "Error: Debes seleccionar un modelo primero en la lista", Toast.LENGTH_LONG).show();
-            return;
-        }
-
+        if (modelUrl == null || modelUrl.isEmpty()) return;
         btnAbrirAR.setEnabled(false);
-        btnAbrirAR.setText("Cargando...");
+        btnAbrirAR.setText("Descargando...");
         
-        File localFile = new File(getCacheDir(), modelId + ".glb");
-        if (localFile.exists()) {
-            openARActivity(localFile.getAbsolutePath());
+        File file = new File(getCacheDir(), modelId + ".glb");
+        if (file.exists()) {
+            downloadSlidesIfNeeded(file.getAbsolutePath());
             return;
         }
 
-        if (modelUrl.startsWith("gs://") || modelUrl.contains("firebasestorage.googleapis.com")) {
-            StorageReference storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(modelUrl);
-            storageRef.getFile(localFile).addOnSuccessListener(taskSnapshot -> openARActivity(localFile.getAbsolutePath())).addOnFailureListener(exception -> {
-                btnAbrirAR.setEnabled(true);
-                btnAbrirAR.setText("🚀 Abrir Experiencia RA");
-                Toast.makeText(MapActivity.this, "Error al descargar modelo", Toast.LENGTH_SHORT).show();
-            });
+        if (modelUrl.startsWith("gs://") || modelUrl.contains("firebasestorage")) {
+            FirebaseStorage.getInstance().getReferenceFromUrl(modelUrl).getFile(file)
+                .addOnSuccessListener(task -> downloadSlidesIfNeeded(file.getAbsolutePath()))
+                .addOnFailureListener(e -> {
+                    btnAbrirAR.setEnabled(true);
+                    btnAbrirAR.setText("Reintentar RA");
+                });
         } else {
-            downloadFromExternalUrl(modelUrl, localFile);
+            downloadExternal(modelUrl, file, true);
         }
     }
 
-    private void downloadFromExternalUrl(String urlString, File destination) {
+    private void downloadSlidesIfNeeded(String localModelPath) {
+        if (slidesUrl == null || slidesUrl.isEmpty()) {
+            openARActivity(localModelPath, null);
+            return;
+        }
+
+        File localSlidesFile = new File(getCacheDir(), modelId + "_slides.pdf");
+        if (localSlidesFile.exists()) {
+            openARActivity(localModelPath, localSlidesFile.getAbsolutePath());
+            return;
+        }
+
+        if (slidesUrl.startsWith("gs://") || slidesUrl.contains("firebasestorage")) {
+            FirebaseStorage.getInstance().getReferenceFromUrl(slidesUrl).getFile(localSlidesFile)
+                .addOnSuccessListener(task -> openARActivity(localModelPath, localSlidesFile.getAbsolutePath()))
+                .addOnFailureListener(e -> {
+                    // Si fallan las slides, abrir solo el modelo
+                    openARActivity(localModelPath, null);
+                });
+        } else {
+            downloadExternal(slidesUrl, localSlidesFile, false);
+        }
+    }
+
+    private void downloadExternal(String url, File dest, boolean isModel) {
         new Thread(() -> {
             try {
-                java.net.URL url = new java.net.URL(urlString.replace(" ", "%20"));
-                java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
-                connection.connect();
-                try (java.io.InputStream input = connection.getInputStream();
-                     java.io.OutputStream output = new java.io.FileOutputStream(destination)) {
-                    byte[] data = new byte[8192];
-                    int count;
-                    while ((count = input.read(data)) != -1) {
-                        output.write(data, 0, count);
-                    }
+                java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(url.replace(" ", "%20")).openConnection();
+                c.connect();
+                try (java.io.InputStream in = c.getInputStream(); java.io.OutputStream out = new java.io.FileOutputStream(dest)) {
+                    byte[] b = new byte[8192]; int r;
+                    while ((r = in.read(b)) != -1) out.write(b, 0, r);
                 }
-                runOnUiThread(() -> openARActivity(destination.getAbsolutePath()));
-            } catch (Exception e) {
                 runOnUiThread(() -> {
-                    btnAbrirAR.setEnabled(true);
-                    btnAbrirAR.setText("🚀 Abrir Experiencia RA");
-                    Toast.makeText(this, "Error de red", Toast.LENGTH_SHORT).show();
+                    if (isModel) downloadSlidesIfNeeded(dest.getAbsolutePath());
+                    else openARActivity(dest.getParent() + "/" + modelId + ".glb", dest.getAbsolutePath());
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> { 
+                    btnAbrirAR.setEnabled(true); 
+                    btnAbrirAR.setText(isModel ? "Error Red" : "Error Slides");
+                    if (!isModel) openARActivity(dest.getParent() + "/" + modelId + ".glb", null);
                 });
             }
         }).start();
     }
 
-    private void openARActivity(String modelPath) {
-        Intent intent = new Intent(this, modelARActivity.class);
-        intent.putExtra("model_path", modelPath);
-        if (slides != null) {
-            intent.putStringArrayListExtra("slides", slides);
-        }
+    private void openARActivity(String modelPath, String slidesPath) {
+        Intent intent = new Intent(this, HelloArActivity.class);
+        if (modelPath != null) intent.putExtra("model_path", modelPath);
+        if (slidesPath != null) intent.putExtra("slides_url", slidesPath);
+        if (slides != null) intent.putStringArrayListExtra("slides", slides);
+
         startActivity(intent);
         btnAbrirAR.setEnabled(true);
         btnAbrirAR.setText("🚀 Abrir Experiencia RA");
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == LOCATION_PERMISSION_REQUEST) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startLocationUpdates();
-            }
+    protected void onResume() { super.onResume(); startLocationUpdates(); }
+
+    @Override
+    protected void onPause() { super.onPause(); fusedLocationClient.removeLocationUpdates(locationCallback); }
+
+    @SuppressWarnings("MissingPermission")
+    private void startLocationUpdates() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            LocationRequest req = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000).build();
+            fusedLocationClient.requestLocationUpdates(req, locationCallback, null);
         }
     }
 }

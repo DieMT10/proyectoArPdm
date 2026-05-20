@@ -35,7 +35,7 @@
                 android:layout_height="wrap_content"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black"
+                android:textColor="@color/colorPrimary"
                 android:text="Nombre del Modelo" />
 
             <TextView
