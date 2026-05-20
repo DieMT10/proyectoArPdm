@@ -32,6 +32,9 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -142,13 +145,141 @@ public class Mesh implements Closeable {
             return createFromObjAsset(render, assetFileName);
         } else if (assetFileName.toLowerCase().endsWith(".glb")) {
             return createFromGlbAsset(render, assetFileName);
-        } else if (assetFileName.toLowerCase().endsWith(".gltf")) {
-            return createFromGltfAsset(render, assetFileName);
-        } else if (assetFileName.toLowerCase().endsWith(".usdz")) {
-            throw new IOException("USDZ support is not yet implemented. Please use .glb.");
         } else {
             throw new IllegalArgumentException("Unsupported file extension: " + assetFileName);
         }
+    }
+
+    /**
+     * Constructs a list of {@link Mesh} objects from the given asset file.
+     * Supports .glb (glTF binary) format with multiple primitives/materials.
+     */
+    public static List<Mesh> createMeshesFromAsset(SampleRender render, String assetFileName) throws IOException {
+        try (InputStream inputStream = render.getAssets().open(assetFileName)) {
+            if (assetFileName.toLowerCase().endsWith(".glb")) {
+                return createMeshesFromGlbStream(render, inputStream);
+            } else {
+                // Fallback to single mesh for other formats
+                return Collections.singletonList(createFromAsset(render, assetFileName));
+            }
+        }
+    }
+
+    public static List<Mesh> createMeshesFromFile(SampleRender render, String filePath) throws IOException {
+        try (InputStream inputStream = new FileInputStream(filePath)) {
+            if (filePath.toLowerCase().endsWith(".glb")) {
+                return createMeshesFromGlbStream(render, inputStream);
+            } else {
+                return Collections.singletonList(createFromFile(render, filePath));
+            }
+        }
+    }
+
+    private static List<Mesh> createMeshesFromGlbStream(SampleRender render, InputStream inputStream) throws IOException {
+        try {
+            byte[] glbData = readAllBytes(inputStream);
+            ByteBuffer buffer = ByteBuffer.wrap(glbData).order(ByteOrder.LITTLE_ENDIAN);
+
+            // GLB Header
+            int magic = buffer.getInt();
+            if (magic != 0x46546C67) throw new IOException("Invalid GLB magic");
+            int version = buffer.getInt();
+            int length = buffer.getInt();
+
+            // JSON Chunk
+            int jsonChunkLength = buffer.getInt();
+            int jsonChunkType = buffer.getInt();
+            byte[] jsonBytes = new byte[jsonChunkLength];
+            buffer.get(jsonBytes);
+            JSONObject json = new JSONObject(new String(jsonBytes, StandardCharsets.UTF_8));
+
+            // BIN Chunk
+            int binChunkLength = buffer.getInt();
+            int binChunkType = buffer.getInt();
+            ByteBuffer binBuffer = buffer.slice().order(ByteOrder.LITTLE_ENDIAN);
+
+            List<Mesh> allMeshes = new ArrayList<>();
+            JSONArray meshesJson = json.getJSONArray("meshes");
+            
+            for (int i = 0; i < meshesJson.length(); i++) {
+                JSONObject meshJson = meshesJson.getJSONObject(i);
+                JSONArray primitivesJson = meshJson.getJSONArray("primitives");
+                
+                for (int j = 0; j < primitivesJson.length(); j++) {
+                    JSONObject primitiveJson = primitivesJson.getJSONObject(j);
+                    allMeshes.add(createSingleMeshFromPrimitive(render, json, binBuffer, primitiveJson));
+                }
+            }
+            return allMeshes;
+        } catch (Exception e) {
+            throw new IOException("Failed to parse GLB", e);
+        }
+    }
+
+    private static Mesh createSingleMeshFromPrimitive(SampleRender render, JSONObject json, ByteBuffer binBuffer, JSONObject primitiveJson) throws JSONException {
+        JSONObject attributes = primitiveJson.getJSONObject("attributes");
+
+        // Primitive Mode
+        int mode = primitiveJson.optInt("mode", 4);
+        Mesh.PrimitiveMode primitiveMode = Mesh.PrimitiveMode.TRIANGLES;
+        // (Misma lógica de switch que antes para mode...)
+
+        // Positions
+        FloatBuffer localCoordinates = extractFloatBuffer(json, binBuffer, attributes.getInt("POSITION"), 3);
+
+        // TexCoords
+        FloatBuffer textureCoordinates;
+        if (attributes.has("TEXCOORD_0")) {
+            textureCoordinates = extractFloatBuffer(json, binBuffer, attributes.getInt("TEXCOORD_0"), 2);
+        } else {
+            textureCoordinates = ByteBuffer.allocateDirect(localCoordinates.limit() / 3 * 2 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        }
+
+        // Normals
+        FloatBuffer normals;
+        if (attributes.has("NORMAL")) {
+            normals = extractFloatBuffer(json, binBuffer, attributes.getInt("NORMAL"), 3);
+        } else {
+            normals = ByteBuffer.allocateDirect(localCoordinates.limit() * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        }
+
+        // Indices
+        IndexBuffer indexBuffer = null;
+        if (primitiveJson.has("indices")) {
+            indexBuffer = new IndexBuffer(render, extractIntBuffer(json, binBuffer, primitiveJson.getInt("indices")));
+        }
+
+        Mesh mesh = new Mesh(render, primitiveMode, indexBuffer, new VertexBuffer[]{
+                new VertexBuffer(render, 3, localCoordinates),
+                new VertexBuffer(render, 2, textureCoordinates),
+                new VertexBuffer(render, 3, normals)
+        });
+
+        // EXTRACT COLOR/TEXTURE FOR THIS SPECIFIC PRIMITIVE
+        try {
+            float[] color = {1f, 1f, 1f, 1f};
+            int matIdx = primitiveJson.optInt("material", -1);
+            if (matIdx != -1 && json.has("materials")) {
+                JSONObject mat = json.getJSONArray("materials").getJSONObject(matIdx);
+                if (mat.has("pbrMetallicRoughness")) {
+                    JSONObject pbr = mat.getJSONObject("pbrMetallicRoughness");
+                    if (pbr.has("baseColorFactor")) {
+                        JSONArray colArr = pbr.getJSONArray("baseColorFactor");
+                        for (int k = 0; k < 4; k++) color[k] = (float) colArr.getDouble(k);
+                    }
+                }
+            }
+            
+            // Crear textura de color sólido como base
+            Bitmap bmp = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+            bmp.setPixel(0, 0, android.graphics.Color.argb((int)(color[3]*255), (int)(color[0]*255), (int)(color[1]*255), (int)(color[2]*255)));
+            mesh.setModelTexture(Texture.createFromBitmap(render, bmp, Texture.WrapMode.CLAMP_TO_EDGE, Texture.ColorFormat.SRGB));
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting primitive material", e);
+        }
+
+        return mesh;
     }
 
     private static Mesh createFromObjAsset(SampleRender render, String assetFileName) throws IOException {

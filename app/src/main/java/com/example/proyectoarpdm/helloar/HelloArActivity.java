@@ -2,6 +2,7 @@ package com.example.proyectoarpdm.helloar;
 
 import android.graphics.Bitmap;
 import android.graphics.pdf.PdfRenderer;
+import android.util.LruCache;
 import android.media.Image;
 import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
@@ -111,7 +112,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private Shader pointCloudShader;
   private long lastPointCloudTimestamp = 0;
 
-  private Mesh virtualObjectMesh;
+  private List<Mesh> virtualObjectMeshes = new ArrayList<>();
   private Shader virtualObjectShader;
   private Texture fallbackWhiteTexture;
 
@@ -129,6 +130,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private int currentSlideIndex = 0;
   private PdfRenderer pdfRenderer;
   private PdfRenderer.Page currentPage;
+  private LruCache<Integer, Bitmap> pdfCache;
   private ParcelFileDescriptor parcelFileDescriptor;
   private int totalPages = 0;
   private String[] slidePages;
@@ -198,6 +200,15 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     btnMoveYNeg.setOnClickListener(v -> offsetY -= TRANSLATION_STEP);
     btnMoveZPos.setOnClickListener(v -> offsetZ += TRANSLATION_STEP);
     btnMoveZNeg.setOnClickListener(v -> offsetZ -= TRANSLATION_STEP);
+
+    // Initialize PDF cache (e.g., 20MB)
+    final int cacheSize = 20 * 1024 * 1024;
+    pdfCache = new LruCache<Integer, Bitmap>(cacheSize) {
+        @Override
+        protected int sizeOf(Integer key, Bitmap value) {
+            return value.getByteCount();
+        }
+    };
 
     initPdfRenderer();
 
@@ -367,9 +378,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       if (modelPath != null) {
           try {
               if (modelPath.startsWith("/")) {
-                  virtualObjectMesh = Mesh.createFromFile(render, modelPath);
+                  virtualObjectMeshes = Mesh.createMeshesFromFile(render, modelPath);
               } else {
-                  virtualObjectMesh = Mesh.createFromAsset(render, modelPath);
+                  virtualObjectMeshes = Mesh.createMeshesFromAsset(render, modelPath);
               }
           } catch (IOException e) {
               Log.e(TAG, "Failed to load mesh", e);
@@ -384,17 +395,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
               .setTexture("u_Cubemap", cubemapFilter.getFilteredCubemapTexture())
               .setTexture("u_DfgTexture", dfgTexture);
       
-      // FIX: Set all required textures including AO
+      // Albedo and other PBR textures will be set per-mesh during draw
       virtualObjectShader.setTexture("u_AlbedoTexture", fallbackWhiteTexture);
       virtualObjectShader.setTexture("u_RoughnessMetallicAmbientOcclusionTexture", fallbackWhiteTexture);
-
-      if (virtualObjectMesh != null && virtualObjectMesh.getModelTexture() != null) {
-          Log.d(TAG, "Usando textura/color del modelo para Albedo");
-          virtualObjectShader.setTexture("u_AlbedoTexture", virtualObjectMesh.getModelTexture());
-      } else {
-          Log.d(TAG, "No se encontró color en el modelo, usando blanco por defecto");
-          virtualObjectShader.setTexture("u_AlbedoTexture", fallbackWhiteTexture);
-      }
 
     } catch (IOException e) {
       Log.e(TAG, "Failed to read asset file", e);
@@ -518,8 +521,13 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       virtualObjectShader.setMat4("u_ModelView", modelViewMatrix);
       virtualObjectShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
 
-      if (virtualObjectMesh != null) {
-        render.draw(virtualObjectMesh, virtualObjectShader, virtualSceneFramebuffer);
+      for (Mesh mesh : virtualObjectMeshes) {
+          if (mesh.getModelTexture() != null) {
+              virtualObjectShader.setTexture("u_AlbedoTexture", mesh.getModelTexture());
+          } else {
+              virtualObjectShader.setTexture("u_AlbedoTexture", fallbackWhiteTexture);
+          }
+          render.draw(mesh, virtualObjectShader, virtualSceneFramebuffer);
       }
     }
 
@@ -570,11 +578,26 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   private void updateSlideUI() {
     if (pdfRenderer != null) {
-        if (currentPage != null) currentPage.close();
-        currentPage = pdfRenderer.openPage(currentSlideIndex);
-        Bitmap bitmap = Bitmap.createBitmap(currentPage.getWidth(), currentPage.getHeight(), Bitmap.Config.ARGB_8888);
-        currentPage.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-        slideImage.setImageBitmap(bitmap);
+        Bitmap cachedBitmap = pdfCache.get(currentSlideIndex);
+        if (cachedBitmap != null) {
+            slideImage.setImageBitmap(cachedBitmap);
+        } else {
+            if (currentPage != null) currentPage.close();
+            currentPage = pdfRenderer.openPage(currentSlideIndex);
+            
+            // Optimization: scale down if page is too large
+            int width = currentPage.getWidth();
+            int height = currentPage.getHeight();
+            if (width > 2048 || height > 2048) {
+                width /= 2;
+                height /= 2;
+            }
+            
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            currentPage.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+            pdfCache.put(currentSlideIndex, bitmap);
+            slideImage.setImageBitmap(bitmap);
+        }
         slideImage.setVisibility(View.VISIBLE);
         slideTitle.setText(getString(R.string.slide_page_title, currentSlideIndex + 1));
         slideContent.setText(getString(R.string.slide_page_indicator, String.valueOf(currentSlideIndex + 1), String.valueOf(totalPages)));
@@ -604,7 +627,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   private void closePdfRenderer() {
     try {
-      if (currentPage != null) currentPage.close();
+        if (pdfCache != null) pdfCache.evictAll();
+        if (currentPage != null) currentPage.close();
       if (pdfRenderer != null) pdfRenderer.close();
       if (parcelFileDescriptor != null) parcelFileDescriptor.close();
     } catch (IOException e) {

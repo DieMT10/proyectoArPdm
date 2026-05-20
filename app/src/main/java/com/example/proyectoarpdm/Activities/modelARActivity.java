@@ -111,7 +111,7 @@ public class modelARActivity extends AppCompatActivity implements SampleRender.R
     private Shader pointCloudShader;
     private long lastPointCloudTimestamp = 0;
 
-    private Mesh virtualObjectMesh;
+    private List<Mesh> virtualObjectMeshes = new ArrayList<>();
     private Shader virtualObjectShader;
     private Texture fallbackWhiteTexture;
 
@@ -417,14 +417,13 @@ public class modelARActivity extends AppCompatActivity implements SampleRender.R
             // Cargar modelo .glb (texturas embebidas)
             try {
                 if (modelPath.startsWith("/")) {
-                    virtualObjectMesh = Mesh.createFromFile(render, modelPath);
+                    virtualObjectMeshes = Mesh.createMeshesFromFile(render, modelPath);
                 } else {
-                    virtualObjectMesh = Mesh.createFromAsset(render, modelPath);
+                    virtualObjectMeshes = Mesh.createMeshesFromAsset(render, modelPath);
                 }
-                if (virtualObjectMesh != null) {
-                    virtualObjectMesh.debugPrintInfo();
-                    Log.d(TAG, "Embedded texture: "
-                            + (virtualObjectMesh.getModelTexture() != null ? "OK" : "NULL"));
+                if (!virtualObjectMeshes.isEmpty()) {
+                    Log.d(TAG, "Loaded " + virtualObjectMeshes.size() + " meshes");
+                    for (Mesh m : virtualObjectMeshes) m.debugPrintInfo();
                 }
             } catch (IOException e) {
                 Log.e(TAG, "Failed to load 3D model: " + modelPath, e);
@@ -445,10 +444,6 @@ public class modelARActivity extends AppCompatActivity implements SampleRender.R
             // Asignar texturas por defecto al shader
             virtualObjectShader.setTexture("u_AlbedoTexture", fallbackWhiteTexture);
             virtualObjectShader.setTexture("u_RoughnessMetallicAmbientOcclusionTexture", fallbackWhiteTexture);
-
-            if (virtualObjectMesh != null && virtualObjectMesh.getModelTexture() != null) {
-                virtualObjectShader.setTexture("u_AlbedoTexture", virtualObjectMesh.getModelTexture());
-            }
 
         } catch (IOException e) {
             Log.e(TAG, "Failed to read a required asset file", e);
@@ -595,13 +590,12 @@ public class modelARActivity extends AppCompatActivity implements SampleRender.R
             virtualObjectShader.setMat4("u_ModelView", modelViewMatrix);
             virtualObjectShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
 
-            // Textura: usar la embebida en el .glb, o fallback si no existe
-            if (virtualObjectMesh != null) {
-                Texture embeddedTexture = virtualObjectMesh.getModelTexture();
+            // Renderizar todas las mallas del modelo (soporte multi-material)
+            for (Mesh mesh : virtualObjectMeshes) {
+                Texture embeddedTexture = mesh.getModelTexture();
                 virtualObjectShader.setTexture("u_AlbedoTexture",
                         embeddedTexture != null ? embeddedTexture : fallbackWhiteTexture);
-
-                render.draw(virtualObjectMesh, virtualObjectShader, virtualSceneFramebuffer);
+                render.draw(mesh, virtualObjectShader, virtualSceneFramebuffer);
             }
         }
 
