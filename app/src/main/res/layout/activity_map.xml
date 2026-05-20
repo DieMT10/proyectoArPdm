@@ -1,62 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="240dp"
-        android:layout_gravity="bottom"
-        android:orientation="vertical"
-        android:padding="20dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
         android:background="#FFFFFF"
-        android:elevation="15dp">
+        android:elevation="8dp"
+        android:orientation="vertical"
+        android:padding="16dp"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Guía Educativa AR"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="#111111" />
+            android:textColor="#111111"
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/txtEstadoGPS"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:text="Calculando distancia..."
-            android:textSize="15sp"
-            android:textStyle="bold"
             android:textColor="#0D47A1"
-            android:layout_marginTop="8dp" />
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/txtDistancia"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
             android:text="Distancia: -- metros"
-            android:textSize="14sp"
             android:textColor="#666666"
-            android:layout_marginTop="4dp" />
+            android:textSize="13sp" />
 
         <Button
             android:id="@+id/btnAbrirAR"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="12dp"
+            android:backgroundTint="#0D47A1"
             android:text="🚀 Abrir Experiencia AR"
             android:textAllCaps="false"
-            android:textSize="18sp"
-            android:textStyle="bold"
             android:textColor="#FFFFFF"
-            android:backgroundTint="#0D47A1"
-            android:layout_marginTop="18dp" />
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
     </LinearLayout>
 
-</FrameLayout>
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/windowBackground"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:menu="@menu/bottom_nav_menu" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -73,4 +73,31 @@
   <string name="scale_down">Disminuir Escala</string>
   <string name="slide_page_indicator">Página %1$s de %2$s</string>
 
+  <string name="ar_prompt_title">¡Llegaste a tu destino!</string>
+  <string name="ar_prompt_message">¿Deseas abrir la cámara de Realidad Aumentada para ver el modelo %1$s?</string>
+  <string name="open_camera">Abrir Cámara</string>
+  <string name="later">Más tarde</string>
+
+  <string name="model_list_title">Modelos Disponibles</string>
+  <string name="nav_models">Modelos</string>
+  <string name="nav_map">Mapa</string>
+  <string name="model_item_description">Toca para descargar y ver en AR</string>
+  <string name="downloading_model">Descargando modelo&#8230;</string>
+  <string name="label_downloading">Descargando&#8230;</string>
+  <string name="label_open_ar">Abrir RA</string>
+  <string name="download_failed">Error al descargar el modelo</string>
+
+  <string name="location_permission_denied">Permiso de ubicación denegado</string>
+  <string name="location_not_found">No se pudo obtener la ubicación</string>
+  <string name="gps_internet_error">Activa GPS e internet</string>
+  <string name="distance_format">📍 Distancia: %1$d metros</string>
+  <string name="point_near">✅ Punto educativo cercano</string>
+  <string name="point_detected">📌 Punto educativo detectado</string>
+  <string name="point_title">Punto Educativo</string>
+  <string name="point_snippet">Zona educativa interactiva</string>
+  <string name="map_guide_title">Guía Educativa RA</string>
+  <string name="status_calculating">Calculando distancia&#8230;</string>
+  <string name="label_distance_empty">Distancia: &#8212; metros</string>
+  <string name="btn_open_ar_long">🚀 Abrir Experiencia RA</string>
+
 </resources>

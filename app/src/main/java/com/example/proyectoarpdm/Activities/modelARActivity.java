@@ -143,6 +143,7 @@ public class modelARActivity extends AppCompatActivity implements SampleRender.R
     private static final float TRANSLATE_STEP = 0.01f;
 
     private String modelPath;
+    private String[] slidePages;
 
     // Slideshow UI
     private View slideshowOverlay;
@@ -150,16 +151,7 @@ public class modelARActivity extends AppCompatActivity implements SampleRender.R
     private TextView slideContent;
     private Button btnPrev;
     private Button btnNext;
-    private Button btnClose;
     private int currentSlideIndex = 0;
-
-    private final String[] slidePages = {
-            "Bienvenido al visor de producto AR.",
-            "Puedes rotar el modelo usando los botones inferiores.",
-            "También puedes ajustar el tamaño para ver detalles.",
-            "Toca el modelo para ver esta información de nuevo.",
-            "¡Explora el producto en tu entorno real!"
-    };
 
     // ─────────────────────────────────────────────────────────────────────────
     //  onCreate
@@ -177,6 +169,19 @@ public class modelARActivity extends AppCompatActivity implements SampleRender.R
         });
 
         modelPath = getIntent().getStringExtra("model_path");
+        ArrayList<String> incomingSlides = getIntent().getStringArrayListExtra("slides");
+        if (incomingSlides != null && !incomingSlides.isEmpty()) {
+            slidePages = incomingSlides.toArray(new String[0]);
+        } else {
+            slidePages = new String[]{
+                    "Bienvenido al visor de producto AR.",
+                    "Puedes rotar el modelo usando los botones inferiores.",
+                    "También puedes ajustar el tamaño para ver detalles.",
+                    "Toca el modelo para ver esta información de nuevo.",
+                    "¡Explora el producto en tu entorno real!"
+            };
+        }
+
         if (modelPath == null || modelPath.isEmpty()) {
             Toast.makeText(this, "Missing model path", Toast.LENGTH_SHORT).show();
             finish();
@@ -246,7 +251,6 @@ public class modelARActivity extends AppCompatActivity implements SampleRender.R
         slideContent     = findViewById(R.id.slide_content);
         btnPrev          = findViewById(R.id.btn_prev);
         btnNext          = findViewById(R.id.btn_next);
-        btnClose         = findViewById(R.id.btn_close);
 
         btnPrev.setOnClickListener(v -> {
             if (currentSlideIndex > 0) { currentSlideIndex--; updateSlideUI(); }
@@ -254,6 +258,7 @@ public class modelARActivity extends AppCompatActivity implements SampleRender.R
         btnNext.setOnClickListener(v -> {
             if (currentSlideIndex < slidePages.length - 1) { currentSlideIndex++; updateSlideUI(); }
         });
+        Button btnClose = findViewById(R.id.btn_close);
         btnClose.setOnClickListener(v -> slideshowOverlay.setVisibility(View.GONE));
 
         ImageButton settingsButton = findViewById(R.id.settings_button);
