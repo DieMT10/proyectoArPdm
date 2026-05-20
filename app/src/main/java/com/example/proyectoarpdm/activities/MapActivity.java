@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -43,6 +44,7 @@ import java.util.Objects;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
 
+    private static final String TAG = "MapActivity";
     private static final int LOCATION_PERMISSION_REQUEST = 1001;
 
     private GoogleMap mMap;
@@ -62,6 +64,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
+        Log.d(TAG, "onCreate: Iniciando MapActivity");
+
         // Recibir datos del modelo
         modelId = getIntent().getStringExtra("model_id");
         modelName = getIntent().getStringExtra("model_name");
@@ -70,14 +74,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         String lon = getIntent().getStringExtra("longitud");
         slides = getIntent().getStringArrayListExtra("slides");
 
+        // Coordenadas por defecto (San Salvador por ejemplo) si no vienen en el intent
         if (lat != null && lon != null && !lat.trim().isEmpty() && !lon.trim().isEmpty()) {
             try {
                 puntoDestino = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
+                Log.d(TAG, "Destino recibido: " + lat + ", " + lon);
             } catch (NumberFormatException e) {
-                puntoDestino = new LatLng(13.4833, -88.1833);
+                puntoDestino = new LatLng(13.6893, -89.1872); 
             }
         } else {
-            puntoDestino = new LatLng(13.4833, -88.1833);
+            Log.d(TAG, "Sin coordenadas en intent, usando ubicación por defecto");
+            puntoDestino = new LatLng(13.6893, -89.1872); 
         }
 
         btnAbrirAR = findViewById(R.id.btnAbrirAR);
@@ -97,7 +104,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             }
         });
 
-        // Configurar callback de ubicación para rastreo continuo (Modo Navegar)
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(@NonNull LocationResult locationResult) {
@@ -111,7 +117,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         if (mapFragment != null) {
+            Log.d(TAG, "Cargando fragmento de mapa...");
             mapFragment.getMapAsync(this);
+        } else {
+            Log.e(TAG, "Error: No se encontró el fragmento con ID R.id.map");
         }
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
@@ -129,25 +138,21 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        startLocationUpdates();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        fusedLocationClient.removeLocationUpdates(locationCallback);
-    }
-
-    @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
+        Log.d(TAG, "onMapReady: El mapa está listo");
         mMap = googleMap;
+        
+        // Configuración visual del mapa
+        mMap.getUiSettings().setZoomControlsEnabled(true);
+        mMap.getUiSettings().setMyLocationButtonEnabled(true);
+        
         mMap.addMarker(new MarkerOptions()
                 .position(puntoDestino)
-                .title(Objects.requireNonNullElse(modelName, getString(R.string.point_title)))
+                .title(modelName != null ? modelName : "Punto Educativo")
                 .snippet("Zona interactiva de RA"));
+        
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(puntoDestino, 15));
+        
         startLocationUpdates();
     }
 
@@ -158,7 +163,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             return;
         }
 
-        if (mMap != null) mMap.setMyLocationEnabled(true);
+        if (mMap != null) {
+            mMap.setMyLocationEnabled(true);
+            Log.d(TAG, "Ubicación en el mapa activada");
+        }
 
         LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000)
                 .setMinUpdateIntervalMillis(2000)
@@ -173,10 +181,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         ubicacionPunto.setLongitude(puntoDestino.longitude);
 
         float distancia = ubicacionUsuario.distanceTo(ubicacionPunto);
-        txtDistancia.setText(getString(R.string.distance_format, Math.round(distancia)));
+        txtDistancia.setText(String.format("Distancia: %d metros", Math.round(distancia)));
 
         if (distancia <= 50) {
-            txtEstadoGPS.setText(R.string.point_near);
+            txtEstadoGPS.setText("¡Llegaste al punto educativo!");
             if (!isCloseEnough && !hasVibratedForThisPoint) {
                 vibrarYNotificar();
             }
@@ -184,16 +192,11 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             btnAbrirAR.setEnabled(true);
             btnAbrirAR.setAlpha(1.0f);
         } else {
-            txtEstadoGPS.setText(R.string.point_detected);
+            txtEstadoGPS.setText("Buscando punto educativo...");
             isCloseEnough = false;
             btnAbrirAR.setEnabled(false);
             btnAbrirAR.setAlpha(0.5f);
-            hasVibratedForThisPoint = false; // Reset si se aleja
-        }
-
-        LatLng miUbicacion = new LatLng(ubicacionUsuario.getLatitude(), ubicacionUsuario.getLongitude());
-        if (mMap != null) {
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(miUbicacion, 16));
+            hasVibratedForThisPoint = false;
         }
     }
 
@@ -209,61 +212,49 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
 
         new AlertDialog.Builder(this)
-                .setTitle(R.string.ar_prompt_title)
-                .setMessage(getString(R.string.ar_prompt_message, modelName))
-                .setPositiveButton(R.string.open_camera, (dialog, which) -> downloadAndOpenModel())
-                .setNegativeButton(R.string.later, null)
+                .setTitle("¡Punto detectado!")
+                .setMessage("¿Deseas abrir la cámara RA para ver el contenido?")
+                .setPositiveButton("Abrir Cámara", (dialog, which) -> downloadAndOpenModel())
+                .setNegativeButton("Más tarde", null)
                 .show();
     }
 
     private void downloadAndOpenModel() {
         if (modelUrl == null || modelUrl.isEmpty()) {
-            Toast.makeText(this, "Error: URL del modelo no disponible", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Error: Debes seleccionar un modelo primero en la lista", Toast.LENGTH_LONG).show();
             return;
         }
 
         btnAbrirAR.setEnabled(false);
-        btnAbrirAR.setText(R.string.label_downloading);
-        Toast.makeText(this, R.string.downloading_model, Toast.LENGTH_SHORT).show();
+        btnAbrirAR.setText("Cargando...");
+        
+        File localFile = new File(getCacheDir(), modelId + ".glb");
+        if (localFile.exists()) {
+            openARActivity(localFile.getAbsolutePath());
+            return;
+        }
 
-        try {
-            File localFile = new File(getCacheDir(), modelId + ".glb");
-            if (localFile.exists()) {
-                openARActivity(localFile.getAbsolutePath());
-                return;
-            }
-
-            // Detectar si es URL de Firebase o externa (AWS S3, etc.)
-            if (modelUrl.startsWith("gs://") || modelUrl.contains("firebasestorage.googleapis.com")) {
-                StorageReference storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(modelUrl);
-                storageRef.getFile(localFile).addOnSuccessListener(taskSnapshot -> openARActivity(localFile.getAbsolutePath())).addOnFailureListener(exception -> {
-                    resetButtonOnError();
-                    Toast.makeText(MapActivity.this, R.string.download_failed, Toast.LENGTH_SHORT).show();
-                });
-            } else {
-                // Descarga genérica para AWS S3 u otros servidores
-                downloadFromExternalUrl(modelUrl, localFile);
-            }
-        } catch (Exception e) {
-            resetButtonOnError();
-            Toast.makeText(this, "Error al preparar descarga", Toast.LENGTH_SHORT).show();
+        if (modelUrl.startsWith("gs://") || modelUrl.contains("firebasestorage.googleapis.com")) {
+            StorageReference storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(modelUrl);
+            storageRef.getFile(localFile).addOnSuccessListener(taskSnapshot -> openARActivity(localFile.getAbsolutePath())).addOnFailureListener(exception -> {
+                btnAbrirAR.setEnabled(true);
+                btnAbrirAR.setText("🚀 Abrir Experiencia RA");
+                Toast.makeText(MapActivity.this, "Error al descargar modelo", Toast.LENGTH_SHORT).show();
+            });
+        } else {
+            downloadFromExternalUrl(modelUrl, localFile);
         }
     }
 
     private void downloadFromExternalUrl(String urlString, File destination) {
         new Thread(() -> {
             try {
-                java.net.URL url = new java.net.URL(urlString);
+                java.net.URL url = new java.net.URL(urlString.replace(" ", "%20"));
                 java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
                 connection.connect();
-
-                if (connection.getResponseCode() != java.net.HttpURLConnection.HTTP_OK) {
-                    throw new Exception("Server returned HTTP " + connection.getResponseCode());
-                }
-
                 try (java.io.InputStream input = connection.getInputStream();
                      java.io.OutputStream output = new java.io.FileOutputStream(destination)) {
-                    byte[] data = new byte[4096];
+                    byte[] data = new byte[8192];
                     int count;
                     while ((count = input.read(data)) != -1) {
                         output.write(data, 0, count);
@@ -272,16 +263,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 runOnUiThread(() -> openARActivity(destination.getAbsolutePath()));
             } catch (Exception e) {
                 runOnUiThread(() -> {
-                    resetButtonOnError();
-                    Toast.makeText(this, "Error descargando desde servidor externo", Toast.LENGTH_SHORT).show();
+                    btnAbrirAR.setEnabled(true);
+                    btnAbrirAR.setText("🚀 Abrir Experiencia RA");
+                    Toast.makeText(this, "Error de red", Toast.LENGTH_SHORT).show();
                 });
             }
         }).start();
-    }
-
-    private void resetButtonOnError() {
-        btnAbrirAR.setEnabled(true);
-        btnAbrirAR.setText(R.string.label_open_ar);
     }
 
     private void openARActivity(String modelPath) {
@@ -292,7 +279,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
         startActivity(intent);
         btnAbrirAR.setEnabled(true);
-        btnAbrirAR.setText(R.string.label_open_ar);
+        btnAbrirAR.setText("🚀 Abrir Experiencia RA");
     }
 
     @Override
@@ -301,8 +288,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         if (requestCode == LOCATION_PERMISSION_REQUEST) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 startLocationUpdates();
-            } else {
-                Toast.makeText(this, R.string.location_permission_denied, Toast.LENGTH_SHORT).show();
             }
         }
     }
