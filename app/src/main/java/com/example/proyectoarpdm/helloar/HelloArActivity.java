@@ -1,7 +1,5 @@
 package com.example.proyectoarpdm.helloar;
 
-import android.content.DialogInterface;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.pdf.PdfRenderer;
 import android.media.Image;
@@ -20,27 +18,11 @@ import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.ar.core.Anchor;
-import com.google.ar.core.ArCoreApk;
-import com.google.ar.core.ArCoreApk.Availability;
-import com.google.ar.core.Camera;
-import com.google.ar.core.Config;
-import com.google.ar.core.Config.InstantPlacementMode;
-import com.google.ar.core.DepthPoint;
-import com.google.ar.core.Frame;
-import com.google.ar.core.HitResult;
-import com.google.ar.core.InstantPlacementPoint;
-import com.google.ar.core.LightEstimate;
-import com.google.ar.core.Plane;
-import com.google.ar.core.Point;
-import com.google.ar.core.Point.OrientationMode;
-import com.google.ar.core.PointCloud;
-import com.google.ar.core.Session;
-import com.google.ar.core.Trackable;
-import com.google.ar.core.TrackingFailureReason;
-import com.google.ar.core.TrackingState;
+
+import com.example.proyectoarpdm.R;
 import com.example.proyectoarpdm.common.helpers.CameraPermissionHelper;
 import com.example.proyectoarpdm.common.helpers.DepthSettings;
 import com.example.proyectoarpdm.common.helpers.DisplayRotationHelper;
@@ -59,6 +41,21 @@ import com.example.proyectoarpdm.common.samplerender.VertexBuffer;
 import com.example.proyectoarpdm.common.samplerender.arcore.BackgroundRenderer;
 import com.example.proyectoarpdm.common.samplerender.arcore.PlaneRenderer;
 import com.example.proyectoarpdm.common.samplerender.arcore.SpecularCubemapFilter;
+import com.google.ar.core.Anchor;
+import com.google.ar.core.ArCoreApk;
+import com.google.ar.core.ArCoreApk.Availability;
+import com.google.ar.core.Camera;
+import com.google.ar.core.Config;
+import com.google.ar.core.Frame;
+import com.google.ar.core.HitResult;
+import com.google.ar.core.LightEstimate;
+import com.google.ar.core.Plane;
+import com.google.ar.core.Point;
+import com.google.ar.core.PointCloud;
+import com.google.ar.core.Session;
+import com.google.ar.core.Trackable;
+import com.google.ar.core.TrackingFailureReason;
+import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
@@ -68,12 +65,12 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 
 public class HelloArActivity extends AppCompatActivity implements SampleRender.Renderer {
@@ -100,15 +97,14 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private DisplayRotationHelper displayRotationHelper;
   private final TrackingStateHelper trackingStateHelper = new TrackingStateHelper(this);
   private TapHelper tapHelper;
-  private SampleRender render;
   private PlaneRenderer planeRenderer;
   private BackgroundRenderer backgroundRenderer;
   private Framebuffer virtualSceneFramebuffer;
   private boolean hasSetTextureNames = false;
   private final DepthSettings depthSettings = new DepthSettings();
-  private boolean[] depthSettingsMenuDialogCheckboxes = new boolean[2];
+  private final boolean[] depthSettingsMenuDialogCheckboxes = new boolean[2];
   private final InstantPlacementSettings instantPlacementSettings = new InstantPlacementSettings();
-  private boolean[] instantPlacementSettingsMenuDialogCheckboxes = new boolean[1];
+  private final boolean[] instantPlacementSettingsMenuDialogCheckboxes = new boolean[1];
 
   private VertexBuffer pointCloudVertexBuffer;
   private Mesh pointCloudMesh;
@@ -118,12 +114,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private Mesh virtualObjectMesh;
   private Shader virtualObjectShader;
   private Texture fallbackWhiteTexture;
-  // ── ELIMINADO: virtualObjectAlbedoTexture y virtualObjectAlbedoInstantPlacementTexture
-  //    El .glb trae sus texturas embebidas; se acceden con virtualObjectMesh.getModelTexture()
 
   private final List<WrappedAnchor> wrappedAnchors = new ArrayList<>();
 
-  private Texture dfgTexture;
   private SpecularCubemapFilter cubemapFilter;
 
   // Slideshow UI
@@ -133,19 +126,18 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private ImageView slideImage;
   private Button btnPrev;
   private Button btnNext;
-  private Button btnClose;
   private int currentSlideIndex = 0;
   private PdfRenderer pdfRenderer;
   private PdfRenderer.Page currentPage;
   private ParcelFileDescriptor parcelFileDescriptor;
   private int totalPages = 0;
+  private String[] slidePages;
 
   private float scaleFactor = 0.1f;
   private float rotationAngle = 0f;
   private static final float SCALE_STEP = 0.05f;
   private static final float ROTATION_STEP = 15f;
 
-  private final float[] modelMatrix = new float[16];
   private final float[] viewMatrix = new float[16];
   private final float[] projectionMatrix = new float[16];
   private final float[] modelViewMatrix = new float[16];
@@ -157,21 +149,33 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private float offsetX = 0f;
   private float offsetY = 0f;
   private float offsetZ = 0f;
-  private static final float TRANSLATION_STEP = 0.05f; // metros
+  private static final float TRANSLATION_STEP = 0.05f;
+
+  private String modelPath;
+  private String slidesPath;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(com.example.proyectoarpdm.R.layout.activity_main);
+    
+    // Obtener datos del Intent
+    modelPath = getIntent().getStringExtra("model_path");
+    slidesPath = getIntent().getStringExtra("slides_url"); // En ModelListActivity lo pasamos como slides_url
+    ArrayList<String> incomingSlides = getIntent().getStringArrayListExtra("slides");
+    
+    if (incomingSlides != null && !incomingSlides.isEmpty()) {
+        slidePages = incomingSlides.toArray(new String[0]);
+    }
+
     surfaceView = findViewById(com.example.proyectoarpdm.R.id.surfaceview);
     displayRotationHelper = new DisplayRotationHelper(this);
     tapHelper = new TapHelper(this);
     surfaceView.setOnTouchListener(tapHelper);
-    render = new SampleRender(surfaceView, this, getAssets());
+    new SampleRender(surfaceView, this, getAssets());
     installRequested = false;
     depthSettings.onCreate(this);
     instantPlacementSettings.onCreate(this);
-    // Activar instant placement por defecto
     instantPlacementSettings.setInstantPlacementEnabled(true);
 
     slideshowOverlay = findViewById(com.example.proyectoarpdm.R.id.slideshow_overlay);
@@ -180,7 +184,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     slideImage       = findViewById(com.example.proyectoarpdm.R.id.slide_image);
     btnPrev          = findViewById(com.example.proyectoarpdm.R.id.btn_prev);
     btnNext          = findViewById(com.example.proyectoarpdm.R.id.btn_next);
-    btnClose         = findViewById(com.example.proyectoarpdm.R.id.btn_close);
 
     ImageButton btnMoveXPos = findViewById(com.example.proyectoarpdm.R.id.btn_move_x_pos);
     ImageButton btnMoveXNeg = findViewById(com.example.proyectoarpdm.R.id.btn_move_x_neg);
@@ -202,8 +205,12 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       if (currentSlideIndex > 0) { currentSlideIndex--; updateSlideUI(); }
     });
     btnNext.setOnClickListener(v -> {
-      if (currentSlideIndex < totalPages - 1) { currentSlideIndex++; updateSlideUI(); }
+      int maxPages = (pdfRenderer != null) ? totalPages : (slidePages != null ? slidePages.length : 0);
+      if (currentSlideIndex < maxPages - 1) {
+          currentSlideIndex++; updateSlideUI(); 
+      }
     });
+    Button btnClose = findViewById(com.example.proyectoarpdm.R.id.btn_close);
     btnClose.setOnClickListener(v -> slideshowOverlay.setVisibility(View.GONE));
 
     ImageButton btnScaleUp = findViewById(com.example.proyectoarpdm.R.id.btn_scale_up);
@@ -324,20 +331,22 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
       cubemapFilter = new SpecularCubemapFilter(render, CUBEMAP_RESOLUTION, CUBEMAP_NUMBER_OF_IMPORTANCE_SAMPLES);
 
-      // Textura DFG — parte del pipeline PBR, no es del modelo
-      dfgTexture = new Texture(render, Texture.Target.TEXTURE_2D, Texture.WrapMode.CLAMP_TO_EDGE, false);
+      // Textura DFG
+      Texture dfgTexture = new Texture(render, Texture.Target.TEXTURE_2D, Texture.WrapMode.CLAMP_TO_EDGE, false);
       final int dfgResolution = 64;
       final int dfgChannels   = 2;
       final int halfFloatSize = 2;
       ByteBuffer buffer = ByteBuffer.allocateDirect(dfgResolution * dfgResolution * dfgChannels * halfFloatSize);
-      try (InputStream is = getAssets().open("models/dfg.raw")) {
-        is.read(buffer.array());
+      try (InputStream is = getAssets().open("models/dfg.raw");
+           java.nio.channels.ReadableByteChannel channel = java.nio.channels.Channels.newChannel(is)) {
+          while (buffer.hasRemaining()) {
+              if (channel.read(buffer) == -1) break;
+          }
+          buffer.rewind();
       }
       GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, dfgTexture.getTextureId());
-      GLError.maybeThrowGLException("Failed to bind DFG texture", "glBindTexture");
       GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D, 0, GLES30.GL_RG16F,
               dfgResolution, dfgResolution, 0, GLES30.GL_RG, GLES30.GL_HALF_FLOAT, buffer);
-      GLError.maybeThrowGLException("Failed to populate DFG texture", "glTexImage2D");
 
       // Point cloud
       pointCloudShader = Shader.createFromAssets(render,
@@ -348,29 +357,44 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       pointCloudMesh = new Mesh(render, Mesh.PrimitiveMode.POINTS, null,
               new VertexBuffer[]{pointCloudVertexBuffer});
 
-      // Textura blanca 1x1 como fallback
+      // Textura blanca fallback
       android.graphics.Bitmap whiteBitmap = android.graphics.Bitmap.createBitmap(1, 1, android.graphics.Bitmap.Config.ARGB_8888);
       whiteBitmap.setPixel(0, 0, android.graphics.Color.WHITE);
       fallbackWhiteTexture = Texture.createFromBitmap(render, whiteBitmap,
               Texture.WrapMode.CLAMP_TO_EDGE, Texture.ColorFormat.SRGB);
 
-      // ── CARGA DE MODELO Y SHADER DE PRUEBA ─────────────────────────────
-      virtualObjectMesh = Mesh.createFromAsset(render, "react_logo.glb");
-      virtualObjectMesh.debugPrintInfo();
-      Log.d(TAG, "Embedded texture: " + (virtualObjectMesh.getModelTexture() != null ? "OK" : "NULL"));
+      // Cargar modelo
+      if (modelPath != null) {
+          try {
+              if (modelPath.startsWith("/")) {
+                  virtualObjectMesh = Mesh.createFromFile(render, modelPath);
+              } else {
+                  virtualObjectMesh = Mesh.createFromAsset(render, modelPath);
+              }
+          } catch (IOException e) {
+              Log.e(TAG, "Failed to load mesh", e);
+          }
+      }
 
-      // Usar shader simple (rojo) para diagnosticar si la geometría carga
+      // Shader PBR
       virtualObjectShader = Shader.createFromAssets(render,
-                      "shaders/point_cloud.vert",
-                      "shaders/point_cloud.frag",
-                      null)
-              .setVec4("u_Color", new float[]{1.0f, 0.0f, 0.0f, 1.0f}) // Rojo
-              .setFloat("u_PointSize", 10.0f);
-      // ────────────────────────────────────────────────────────────────────
+                      "shaders/environmental_hdr.vert", "shaders/environmental_hdr.frag",
+                      Collections.singletonMap("NUMBER_OF_MIPMAP_LEVELS", 
+                              String.valueOf(cubemapFilter.getNumberOfMipmapLevels())))
+              .setTexture("u_Cubemap", cubemapFilter.getFilteredCubemapTexture())
+              .setTexture("u_DfgTexture", dfgTexture);
+      
+      // FIX: Set all required textures including AO
+      virtualObjectShader.setTexture("u_AlbedoTexture", fallbackWhiteTexture);
+      virtualObjectShader.setTexture("u_RoughnessMetallicAmbientOcclusionTexture", fallbackWhiteTexture);
+
+      if (virtualObjectMesh != null && virtualObjectMesh.getModelTexture() != null) {
+          virtualObjectShader.setTexture("u_AlbedoTexture", virtualObjectMesh.getModelTexture());
+      }
 
     } catch (IOException e) {
-      Log.e(TAG, "Failed to read a required asset file", e);
-      messageSnackbarHelper.showError(this, "Failed to read a required asset file: " + e);
+      Log.e(TAG, "Failed to read asset file", e);
+      messageSnackbarHelper.showError(this, "Failed to read asset file: " + e);
     }
   }
 
@@ -382,7 +406,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   @Override
   public void onDrawFrame(SampleRender render) {
-    if (session == null) return;
+    if (session == null || virtualObjectShader == null) return;
 
     if (!hasSetTextureNames) {
       session.setCameraTextureNames(new int[]{backgroundRenderer.getCameraColorTexture().getTextureId()});
@@ -395,8 +419,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     try {
       frame = session.update();
     } catch (CameraNotAvailableException e) {
-      Log.e(TAG, "Camera not available during onDrawFrame", e);
-      messageSnackbarHelper.showError(this, "Camera not available. Try restarting the app.");
+      Log.e(TAG, "Camera not available", e);
       return;
     }
     Camera camera = frame.getCamera();
@@ -405,9 +428,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       backgroundRenderer.setUseDepthVisualization(render, depthSettings.depthColorVisualizationEnabled());
       backgroundRenderer.setUseOcclusion(render, depthSettings.useDepthForOcclusion());
     } catch (IOException e) {
-      Log.e(TAG, "Failed to read a required asset file", e);
-      messageSnackbarHelper.showError(this, "Failed to read a required asset file: " + e);
-      return;
+        Log.e(TAG, "Renderer update failed", e);
     }
     backgroundRenderer.updateDisplayGeometry(frame);
 
@@ -453,16 +474,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     planeRenderer.drawPlanes(render, session.getAllTrackables(Plane.class),
             camera.getDisplayOrientedPose(), projectionMatrix);
 
-    // Default PBR uniforms in case light estimation is not valid yet
-    virtualObjectShader.setBool("u_LightEstimateIsValid", false);
-    float[] identityMatrix = new float[16];
-    Matrix.setIdentityM(identityMatrix, 0);
-    virtualObjectShader.setMat4("u_ViewInverse", identityMatrix);
-    virtualObjectShader.setVec4("u_ViewLightDirection", new float[]{0f, 1f, 0f, 0f});
-    virtualObjectShader.setVec3("u_LightIntensity", new float[]{1f, 1f, 1f});
-    float[] zeroSH = new float[9 * 3];
-    virtualObjectShader.setVec3Array("u_SphericalHarmonicsCoefficients", zeroSH);
-
     updateLightEstimation(frame.getLightEstimate(), viewMatrix);
     render.clear(virtualSceneFramebuffer, 0f, 0f, 0f, 0f);
 
@@ -470,32 +481,37 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       Anchor anchor = wrappedAnchor.getAnchor();
       if (anchor.getTrackingState() != TrackingState.TRACKING) continue;
 
-      anchor.getPose().toMatrix(modelMatrix, 0);
+      float[] localModelMatrix = new float[16];
+      anchor.getPose().toMatrix(localModelMatrix, 0);
 
-// Traslación XYZ manual
+      float[] tempMatrix = new float[16];
+      
+      // 1. Traslación
       float[] translationMatrix = new float[16];
       Matrix.setIdentityM(translationMatrix, 0);
       translationMatrix[12] = offsetX;
       translationMatrix[13] = offsetY;
       translationMatrix[14] = offsetZ;
+      Matrix.multiplyMM(tempMatrix, 0, localModelMatrix, 0, translationMatrix, 0);
+      System.arraycopy(tempMatrix, 0, localModelMatrix, 0, 16);
 
-// Rotación
+      // 2. Rotación
       float[] rotationMatrix = new float[16];
       Matrix.setRotateM(rotationMatrix, 0, rotationAngle, 0f, 1f, 0f);
+      Matrix.multiplyMM(tempMatrix, 0, localModelMatrix, 0, rotationMatrix, 0);
+      System.arraycopy(tempMatrix, 0, localModelMatrix, 0, 16);
 
-// Escala
+      // 3. Escala
       float[] scaleMatrix = new float[16];
       Matrix.setIdentityM(scaleMatrix, 0);
       Matrix.scaleM(scaleMatrix, 0, scaleFactor, scaleFactor, scaleFactor);
+      Matrix.multiplyMM(tempMatrix, 0, localModelMatrix, 0, scaleMatrix, 0);
+      System.arraycopy(tempMatrix, 0, localModelMatrix, 0, 16);
 
-// Orden: pose × traslación × rotación × escala
-      Matrix.multiplyMM(modelMatrix, 0, modelMatrix, 0, translationMatrix, 0);
-      Matrix.multiplyMM(modelMatrix, 0, modelMatrix, 0, rotationMatrix, 0);
-      Matrix.multiplyMM(modelMatrix, 0, modelMatrix, 0, scaleMatrix, 0);
-
-      Matrix.multiplyMM(modelViewMatrix, 0, viewMatrix, 0, modelMatrix, 0);
+      Matrix.multiplyMM(modelViewMatrix, 0, viewMatrix, 0, localModelMatrix, 0);
       Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
 
+      virtualObjectShader.setMat4("u_ModelView", modelViewMatrix);
       virtualObjectShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
 
       if (virtualObjectMesh != null) {
@@ -524,7 +540,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
                   Math.pow(hitPose[0] - anchorPose[0], 2) +
                           Math.pow(hitPose[1] - anchorPose[1], 2) +
                           Math.pow(hitPose[2] - anchorPose[2], 2));
-          if (distance < 0.15) {
+          if (distance < 0.2) {
             runOnUiThread(() -> {
               currentSlideIndex = 0;
               updateSlideUI();
@@ -535,13 +551,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         }
 
         Trackable trackable = hit.getTrackable();
-        if ((trackable instanceof Plane
-                && ((Plane) trackable).isPoseInPolygon(hit.getHitPose())
-                && PlaneRenderer.calculateDistanceToPlane(hit.getHitPose(), camera.getPose()) > 0)
-                || (trackable instanceof Point
-                && ((Point) trackable).getOrientationMode() == OrientationMode.ESTIMATED_SURFACE_NORMAL)
-                || (trackable instanceof InstantPlacementPoint)
-                || (trackable instanceof DepthPoint)) {
+        if ((trackable instanceof Plane) || (trackable instanceof Point) || (trackable instanceof com.google.ar.core.InstantPlacementPoint)) {
           if (wrappedAnchors.size() >= 20) {
             wrappedAnchors.get(0).getAnchor().detach();
             wrappedAnchors.remove(0);
@@ -555,36 +565,29 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   }
 
   private void updateSlideUI() {
-    if (pdfRenderer == null) return;
-
-    if (currentPage != null) {
-      currentPage.close();
+    if (pdfRenderer != null) {
+        if (currentPage != null) currentPage.close();
+        currentPage = pdfRenderer.openPage(currentSlideIndex);
+        Bitmap bitmap = Bitmap.createBitmap(currentPage.getWidth(), currentPage.getHeight(), Bitmap.Config.ARGB_8888);
+        currentPage.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+        slideImage.setImageBitmap(bitmap);
+        slideImage.setVisibility(View.VISIBLE);
+        slideTitle.setText(getString(R.string.slide_page_title, currentSlideIndex + 1));
+        slideContent.setText(getString(R.string.slide_page_indicator, String.valueOf(currentSlideIndex + 1), String.valueOf(totalPages)));
+    } else if (slidePages != null && slidePages.length > 0) {
+        slideImage.setVisibility(View.GONE);
+        slideTitle.setText("Información");
+        slideContent.setText(slidePages[currentSlideIndex]);
     }
-
-    currentPage = pdfRenderer.openPage(currentSlideIndex);
-    Bitmap bitmap = Bitmap.createBitmap(currentPage.getWidth(), currentPage.getHeight(), Bitmap.Config.ARGB_8888);
-    currentPage.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-    slideImage.setImageBitmap(bitmap);
-
-    slideTitle.setText("Diapositiva " + (currentSlideIndex + 1));
-    slideContent.setText("Página " + (currentSlideIndex + 1) + " de " + totalPages);
     btnPrev.setEnabled(currentSlideIndex > 0);
-    btnNext.setEnabled(currentSlideIndex < totalPages - 1);
+    btnNext.setEnabled(currentSlideIndex < (pdfRenderer != null ? totalPages : slidePages.length) - 1);
   }
 
   private void initPdfRenderer() {
+    if (slidesPath == null) return;
     try {
-      File file = new File(getCacheDir(), "temp.pdf");
-      if (!file.exists()) {
-        try (InputStream is = getAssets().open("Untitled design.pdf");
-             FileOutputStream os = new FileOutputStream(file)) {
-          byte[] buffer = new byte[1024];
-          int length;
-          while ((length = is.read(buffer)) > 0) {
-            os.write(buffer, 0, length);
-          }
-        }
-      }
+      File file = new File(slidesPath);
+      if (!file.exists()) return;
       parcelFileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
       if (parcelFileDescriptor != null) {
         pdfRenderer = new PdfRenderer(parcelFileDescriptor);
@@ -597,15 +600,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   private void closePdfRenderer() {
     try {
-      if (currentPage != null) {
-        currentPage.close();
-      }
-      if (pdfRenderer != null) {
-        pdfRenderer.close();
-      }
-      if (parcelFileDescriptor != null) {
-        parcelFileDescriptor.close();
-      }
+      if (currentPage != null) currentPage.close();
+      if (pdfRenderer != null) pdfRenderer.close();
+      if (parcelFileDescriptor != null) parcelFileDescriptor.close();
     } catch (IOException e) {
       Log.e(TAG, "Error closing PdfRenderer", e);
     }
@@ -721,7 +718,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     config.setDepthMode(session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)
             ? Config.DepthMode.AUTOMATIC : Config.DepthMode.DISABLED);
     config.setInstantPlacementMode(instantPlacementSettings.isInstantPlacementEnabled()
-            ? InstantPlacementMode.LOCAL_Y_UP : InstantPlacementMode.DISABLED);
+            ? Config.InstantPlacementMode.LOCAL_Y_UP : Config.InstantPlacementMode.DISABLED);
     session.configure(config);
   }
 }

@@ -437,19 +437,17 @@ public class modelARActivity extends AppCompatActivity implements SampleRender.R
             virtualObjectShader = Shader.createFromAssets(render,
                             "shaders/environmental_hdr.vert",
                             "shaders/environmental_hdr.frag",
-                            new HashMap<String, String>() {{
-                                put("NUMBER_OF_MIPMAP_LEVELS",
-                                        Integer.toString(cubemapFilter.getNumberOfMipmapLevels()));
-                            }})
+                            java.util.Collections.singletonMap("NUMBER_OF_MIPMAP_LEVELS",
+                                    String.valueOf(cubemapFilter.getNumberOfMipmapLevels())))
                     .setTexture("u_Cubemap", cubemapFilter.getFilteredCubemapTexture())
                     .setTexture("u_DfgTexture", dfgTexture);
 
-            // Asignar textura por defecto al shader para que siempre tenga u_AlbedoTexture válida
+            // Asignar texturas por defecto al shader
+            virtualObjectShader.setTexture("u_AlbedoTexture", fallbackWhiteTexture);
+            virtualObjectShader.setTexture("u_RoughnessMetallicAmbientOcclusionTexture", fallbackWhiteTexture);
+
             if (virtualObjectMesh != null && virtualObjectMesh.getModelTexture() != null) {
-                virtualObjectShader.setTexture("u_AlbedoTexture",
-                        virtualObjectMesh.getModelTexture());
-            } else {
-                virtualObjectShader.setTexture("u_AlbedoTexture", fallbackWhiteTexture);
+                virtualObjectShader.setTexture("u_AlbedoTexture", virtualObjectMesh.getModelTexture());
             }
 
         } catch (IOException e) {
@@ -560,28 +558,38 @@ public class modelARActivity extends AppCompatActivity implements SampleRender.R
             Anchor anchor = wrappedAnchor.anchor();
             if (anchor.getTrackingState() != TrackingState.TRACKING) continue;
 
-            // Pose del anchor como matriz base
-            anchor.getPose().toMatrix(modelMatrix, 0);
+            float[] localModelMatrix = new float[16];
+            anchor.getPose().toMatrix(localModelMatrix, 0);
 
-            // 1. Traslación LOCAL (en espacio del anchor, antes de rotar/escalar)
-            Matrix.translateM(modelMatrix, 0, translateX, translateY, translateZ);
+            // 1. Traslación LOCAL
+            float[] translationMatrix = new float[16];
+            Matrix.setIdentityM(translationMatrix, 0);
+            Matrix.translateM(translationMatrix, 0, translateX, translateY, translateZ);
 
-            // 2. Rotación sobre el pivote trasladado
+            float[] tempMatrix = new float[16];
+            Matrix.multiplyMM(tempMatrix, 0, localModelMatrix, 0, translationMatrix, 0);
+            System.arraycopy(tempMatrix, 0, localModelMatrix, 0, 16);
+
+            // 2. Rotación
             float[] rotationMatrix = new float[16];
             Matrix.setIdentityM(rotationMatrix, 0);
             Matrix.rotateM(rotationMatrix, 0, rotationX, 1f, 0f, 0f);
             Matrix.rotateM(rotationMatrix, 0, rotationY, 0f, 1f, 0f);
             Matrix.rotateM(rotationMatrix, 0, rotationZ, 0f, 0f, 1f);
-            Matrix.multiplyMM(modelMatrix, 0, modelMatrix, 0, rotationMatrix, 0);
 
-            // 3. Escala (la más interna, afecta solo al modelo)
+            Matrix.multiplyMM(tempMatrix, 0, localModelMatrix, 0, rotationMatrix, 0);
+            System.arraycopy(tempMatrix, 0, localModelMatrix, 0, 16);
+
+            // 3. Escala
             float[] scaleMatrix = new float[16];
             Matrix.setIdentityM(scaleMatrix, 0);
             Matrix.scaleM(scaleMatrix, 0, scaleFactor, scaleFactor, scaleFactor);
-            Matrix.multiplyMM(modelMatrix, 0, modelMatrix, 0, scaleMatrix, 0);
+
+            Matrix.multiplyMM(tempMatrix, 0, localModelMatrix, 0, scaleMatrix, 0);
+            System.arraycopy(tempMatrix, 0, localModelMatrix, 0, 16);
 
             // MVP
-            Matrix.multiplyMM(modelViewMatrix, 0, viewMatrix, 0, modelMatrix, 0);
+            Matrix.multiplyMM(modelViewMatrix, 0, viewMatrix, 0, localModelMatrix, 0);
             Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
 
             virtualObjectShader.setMat4("u_ModelView", modelViewMatrix);

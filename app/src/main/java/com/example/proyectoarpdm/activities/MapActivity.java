@@ -233,17 +233,55 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 return;
             }
 
-            StorageReference storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(modelUrl);
-            storageRef.getFile(localFile).addOnSuccessListener(taskSnapshot -> openARActivity(localFile.getAbsolutePath())).addOnFailureListener(exception -> {
-                btnAbrirAR.setEnabled(true);
-                btnAbrirAR.setText(R.string.label_open_ar);
-                Toast.makeText(MapActivity.this, R.string.download_failed, Toast.LENGTH_SHORT).show();
-            });
+            // Detectar si es URL de Firebase o externa (AWS S3, etc.)
+            if (modelUrl.startsWith("gs://") || modelUrl.contains("firebasestorage.googleapis.com")) {
+                StorageReference storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(modelUrl);
+                storageRef.getFile(localFile).addOnSuccessListener(taskSnapshot -> openARActivity(localFile.getAbsolutePath())).addOnFailureListener(exception -> {
+                    resetButtonOnError();
+                    Toast.makeText(MapActivity.this, R.string.download_failed, Toast.LENGTH_SHORT).show();
+                });
+            } else {
+                // Descarga genérica para AWS S3 u otros servidores
+                downloadFromExternalUrl(modelUrl, localFile);
+            }
         } catch (Exception e) {
-            btnAbrirAR.setEnabled(true);
-            btnAbrirAR.setText(R.string.label_open_ar);
+            resetButtonOnError();
             Toast.makeText(this, "Error al preparar descarga", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void downloadFromExternalUrl(String urlString, File destination) {
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL(urlString);
+                java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
+                connection.connect();
+
+                if (connection.getResponseCode() != java.net.HttpURLConnection.HTTP_OK) {
+                    throw new Exception("Server returned HTTP " + connection.getResponseCode());
+                }
+
+                try (java.io.InputStream input = connection.getInputStream();
+                     java.io.OutputStream output = new java.io.FileOutputStream(destination)) {
+                    byte[] data = new byte[4096];
+                    int count;
+                    while ((count = input.read(data)) != -1) {
+                        output.write(data, 0, count);
+                    }
+                }
+                runOnUiThread(() -> openARActivity(destination.getAbsolutePath()));
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    resetButtonOnError();
+                    Toast.makeText(this, "Error descargando desde servidor externo", Toast.LENGTH_SHORT).show();
+                });
+            }
+        }).start();
+    }
+
+    private void resetButtonOnError() {
+        btnAbrirAR.setEnabled(true);
+        btnAbrirAR.setText(R.string.label_open_ar);
     }
 
     private void openARActivity(String modelPath) {
