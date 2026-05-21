@@ -20,10 +20,18 @@ import java.io.InputStream;
 
 public class S3Helper {
     private static final String TAG = "S3Helper";
+<<<<<<< HEAD
     private static final String ACCESS_KEY = "YOUR_ACCESS_KEY";
 private static final String SECRET_KEY = "YOUR_SECRET_KEY";
     private static final String BUCKET_NAME = "cobro-smart-s3test";
     private static final String REGION_NAME = "us-east-2"; // Para la URL
+=======
+
+    private static final String A = "";
+    private static final String Ak = "";
+    private static final String Akb = "";
+    private static final String AkbN = ""; // Para la URL
+>>>>>>> 5cd114d (Refactoriza constantes de configuración en S3Helper)
 
     public interface UploadCallback {
         void onProgress(int id, long bytesCurrent, long bytesTotal);
@@ -36,7 +44,7 @@ private static final String SECRET_KEY = "YOUR_SECRET_KEY";
             // Inicializar el manejador de pérdida de red (Requerido por el SDK)
             TransferNetworkLossHandler.getInstance(context);
 
-            AmazonS3Client s3Client = new AmazonS3Client(new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY));
+            AmazonS3Client s3Client = new AmazonS3Client(new BasicAWSCredentials(A, Ak));
             s3Client.setRegion(com.amazonaws.regions.Region.getRegion(Regions.US_EAST_2));
 
             TransferUtility transferUtility = TransferUtility.builder()
@@ -48,13 +56,13 @@ private static final String SECRET_KEY = "YOUR_SECRET_KEY";
             String s3Path = "pdm/" + folder + "/" + fileName;
 
             // Para que los archivos sean públicos, debes configurar una "Bucket Policy" en la consola de AWS S3.
-            TransferObserver observer = transferUtility.upload(BUCKET_NAME, s3Path, tempFile);
+            TransferObserver observer = transferUtility.upload(Akb, s3Path, tempFile);
 
             observer.setTransferListener(new TransferListener() {
                 @Override
                 public void onStateChanged(int id, TransferState state) {
                     if (state == TransferState.COMPLETED) {
-                        String url = String.format("https://%s.s3.%s.amazonaws.com/%s", BUCKET_NAME, REGION_NAME, s3Path);
+                        String url = String.format("https://%s.s3.%s.amazonaws.com/%s", Akb, AkbN, s3Path);
                         callback.onSuccess(url);
                         tempFile.delete();
                     } else if (state == TransferState.FAILED) {
