@@ -136,7 +136,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private String[] slidePages;
 
   private float scaleFactor = 0.1f;
-  private float rotationAngle = 0f;
+  private float rotationX = 0f;
+  private float rotationY = 0f;
+  private float rotationZ = 0f;
   private static final float SCALE_STEP = 0.05f;
   private static final float ROTATION_STEP = 15f;
 
@@ -226,13 +228,36 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     ImageButton btnScaleUp = findViewById(com.example.proyectoarpdm.R.id.btn_scale_up);
     ImageButton btnScaleDown = findViewById(com.example.proyectoarpdm.R.id.btn_scale_down);
-    ImageButton btnRotateLeft = findViewById(com.example.proyectoarpdm.R.id.btn_rotate_left);
-    ImageButton btnRotateRight = findViewById(com.example.proyectoarpdm.R.id.btn_rotate_right);
+
+    // Rotation X
+    ImageButton btnRotateXUp = findViewById(com.example.proyectoarpdm.R.id.btn_rotate_x_up);
+    ImageButton btnRotateXDown = findViewById(com.example.proyectoarpdm.R.id.btn_rotate_x_down);
+
+    // Rotation Y (Own axis)
+    ImageButton btnRotateYLeft = findViewById(com.example.proyectoarpdm.R.id.btn_rotate_y_left);
+    ImageButton btnRotateYRight = findViewById(com.example.proyectoarpdm.R.id.btn_rotate_y_right);
+
+    // Rotation Z
+    ImageButton btnRotateZLeft = findViewById(com.example.proyectoarpdm.R.id.btn_rotate_z_left);
+    ImageButton btnRotateZRight = findViewById(com.example.proyectoarpdm.R.id.btn_rotate_z_right);
 
     btnScaleUp.setOnClickListener(v -> scaleFactor = Math.min(scaleFactor + SCALE_STEP, 2.0f));
     btnScaleDown.setOnClickListener(v -> scaleFactor = Math.max(scaleFactor - SCALE_STEP, 0.05f));
-    btnRotateLeft.setOnClickListener(v -> rotationAngle = (rotationAngle - ROTATION_STEP) % 360f);
-    btnRotateRight.setOnClickListener(v -> rotationAngle = (rotationAngle + ROTATION_STEP) % 360f);
+
+    btnRotateXUp.setOnClickListener(v -> rotationX = (rotationX + ROTATION_STEP) % 360f);
+    btnRotateXDown.setOnClickListener(v -> rotationX = (rotationX - ROTATION_STEP) % 360f);
+
+    btnRotateYLeft.setOnClickListener(v -> rotationY = (rotationY - ROTATION_STEP) % 360f);
+    btnRotateYRight.setOnClickListener(v -> rotationY = (rotationY + ROTATION_STEP) % 360f);
+
+    btnRotateZLeft.setOnClickListener(v -> rotationZ = (rotationZ - ROTATION_STEP) % 360f);
+    btnRotateZRight.setOnClickListener(v -> rotationZ = (rotationZ + ROTATION_STEP) % 360f);
+
+    findViewById(com.example.proyectoarpdm.R.id.btn_reset_coords).setOnClickListener(v -> {
+      offsetX = 0; offsetY = 0; offsetZ = 0;
+      rotationX = 0; rotationY = 0; rotationZ = 0;
+      scaleFactor = 0.1f;
+    });
 
     ImageButton settingsButton = findViewById(com.example.proyectoarpdm.R.id.settings_button);
     settingsButton.setOnClickListener(v -> {
@@ -503,9 +528,13 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       System.arraycopy(tempMatrix, 0, localModelMatrix, 0, 16);
 
       // 2. Rotación
-      float[] rotationMatrix = new float[16];
-      Matrix.setRotateM(rotationMatrix, 0, rotationAngle, 0f, 1f, 0f);
-      Matrix.multiplyMM(tempMatrix, 0, localModelMatrix, 0, rotationMatrix, 0);
+      float[] currentRotation = new float[16];
+      Matrix.setIdentityM(currentRotation, 0);
+      Matrix.rotateM(currentRotation, 0, rotationX, 1f, 0f, 0f);
+      Matrix.rotateM(currentRotation, 0, rotationY, 0f, 1f, 0f);
+      Matrix.rotateM(currentRotation, 0, rotationZ, 0f, 0f, 1f);
+      
+      Matrix.multiplyMM(tempMatrix, 0, localModelMatrix, 0, currentRotation, 0);
       System.arraycopy(tempMatrix, 0, localModelMatrix, 0, 16);
 
       // 3. Escala

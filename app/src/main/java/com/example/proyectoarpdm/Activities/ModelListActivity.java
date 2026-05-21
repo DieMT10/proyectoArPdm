@@ -16,6 +16,7 @@ import com.example.proyectoarpdm.R;
 import com.example.proyectoarpdm.adapters.ModelAdapter;
 import com.example.proyectoarpdm.models.ARModel;
 import com.example.proyectoarpdm.activities.MapActivity;
+import com.example.proyectoarpdm.activities.AddResourceActivity;
 import com.example.proyectoarpdm.helloar.HelloArActivity;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -62,6 +63,11 @@ public class ModelListActivity extends AppCompatActivity implements ModelAdapter
             int itemId = item.getItemId();
             if (itemId == R.id.nav_map) {
                 startActivity(new Intent(this, MapActivity.class));
+                overridePendingTransition(0, 0);
+                finish();
+                return true;
+            } else if (itemId == R.id.nav_add) {
+                startActivity(new Intent(this, AddResourceActivity.class));
                 overridePendingTransition(0, 0);
                 finish();
                 return true;

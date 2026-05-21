@@ -15,6 +15,7 @@ firebaseStorage = "21.0.1"
 playServicesLocation = "21.3.0"
 playServicesMaps = "20.0.0"
 glide = "4.16.0"
+awsS3 = "2.75.2"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -32,6 +33,7 @@ play-services-location = { group = "com.google.android.gms", name = "play-servic
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
 glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glide" }
+aws-android-s3 = { group = "com.amazonaws", name = "aws-android-sdk-s3", version.ref = "awsS3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

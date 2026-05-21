@@ -41,8 +41,18 @@ public class ARModel {
 
     public List<String> getSlides() {
         if (slides instanceof List) {
+            // Soporte para datos antiguos (Listado)
             return (List<String>) slides;
+        } else if (slides instanceof java.util.Map) {
+            // Soporte para datos antiguos (Mapa/Objeto de Firebase)
+            java.util.Map<?, ?> map = (java.util.Map<?, ?>) slides;
+            List<String> list = new ArrayList<>();
+            for (Object value : map.values()) {
+                list.add(String.valueOf(value));
+            }
+            return list;
         } else if (slides instanceof String) {
+            // Estándar actual: Una sola URL
             List<String> list = new ArrayList<>();
             String s = (String) slides;
             if (!s.isEmpty()) {

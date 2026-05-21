@@ -81,6 +81,7 @@
   <string name="model_list_title">Modelos Disponibles</string>
   <string name="nav_models">Modelos</string>
   <string name="nav_map">Mapa</string>
+  <string name="nav_add">Agregar</string>
   <string name="model_item_description">Toca para descargar y ver en AR</string>
   <string name="downloading_model">Descargando modelo&#8230;</string>
   <string name="label_downloading">Descargando&#8230;</string>

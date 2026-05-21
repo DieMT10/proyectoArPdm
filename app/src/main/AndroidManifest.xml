@@ -76,11 +76,21 @@
         android:theme="@style/AppTheme.NoActionBar">
     </activity>
 
+    <activity
+        android:name=".activities.AddResourceActivity"
+        android:exported="true"
+        android:theme="@style/AppTheme.NoActionBar">
+    </activity>
+
     <meta-data android:name="com.google.ar.core" android:value="required" />
 
     <!-- Agregado para Google Maps -->
     <meta-data
         android:name="com.google.android.geo.API_KEY"
         android:value="@string/google_api_key" />
+
+    <service
+        android:name="com.amazonaws.mobileconnectors.s3.transferutility.TransferService"
+        android:enabled="true" />
   </application>
 </manifest>

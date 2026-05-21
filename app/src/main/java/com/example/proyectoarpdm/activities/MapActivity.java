@@ -115,12 +115,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setSelectedItemId(R.id.nav_map);
         bottomNavigationView.setOnItemSelectedListener(item -> {
-            if (item.getItemId() == R.id.nav_models) {
+            int itemId = item.getItemId();
+            if (itemId == R.id.nav_models) {
                 startActivity(new Intent(this, ModelListActivity.class));
                 finish();
                 return true;
+            } else if (itemId == R.id.nav_add) {
+                startActivity(new Intent(this, AddResourceActivity.class));
+                finish();
+                return true;
             }
-            return item.getItemId() == R.id.nav_map;
+            return itemId == R.id.nav_map;
         });
     }
 
