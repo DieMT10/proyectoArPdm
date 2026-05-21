@@ -39,7 +39,7 @@
       tools:ignore="GoogleAppIndexingWarning">
 
     <activity
-        android:name=".Activities.ModelListActivity"
+        android:name=".activities.ModelListActivity"
         android:exported="true"
         android:theme="@style/AppTheme.NoActionBar">
       <intent-filter>
@@ -49,7 +49,7 @@
     </activity>
 
     <activity
-        android:name=".Activities.modelARActivity"
+        android:name=".activities.modelARActivity"
         android:configChanges="orientation|screenSize"
         android:exported="true"
         android:theme="@style/AppTheme.NoActionBar"

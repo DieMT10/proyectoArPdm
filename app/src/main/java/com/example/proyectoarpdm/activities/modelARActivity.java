@@ -1,4 +1,4 @@
-package com.example.proyectoarpdm.Activities;
+package com.example.proyectoarpdm.activities;
 
 import android.media.Image;
 import android.opengl.GLES30;

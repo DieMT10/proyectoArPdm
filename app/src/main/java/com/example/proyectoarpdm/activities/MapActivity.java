@@ -22,7 +22,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import com.example.proyectoarpdm.R;
-import com.example.proyectoarpdm.Activities.ModelListActivity;
 import com.example.proyectoarpdm.helloar.HelloArActivity;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;

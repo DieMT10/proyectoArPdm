@@ -1,4 +1,4 @@
-package com.example.proyectoarpdm.Activities;
+package com.example.proyectoarpdm.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -15,8 +15,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.proyectoarpdm.R;
 import com.example.proyectoarpdm.adapters.ModelAdapter;
 import com.example.proyectoarpdm.models.ARModel;
-import com.example.proyectoarpdm.activities.MapActivity;
-import com.example.proyectoarpdm.activities.AddResourceActivity;
 import com.example.proyectoarpdm.helloar.HelloArActivity;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;

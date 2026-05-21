@@ -14,7 +14,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.proyectoarpdm.R;
-import com.example.proyectoarpdm.Activities.ModelListActivity;
 import com.example.proyectoarpdm.common.helpers.S3Helper;
 import com.example.proyectoarpdm.models.ARModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;

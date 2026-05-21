@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.proyectoarpdm.activities.modelARActivity">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraintLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- FIX: fill_parent (deprecated) reemplazado por match_parent -->
+        <android.opengl.GLSurfaceView
+            android:id="@+id/surfaceview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="top" />
+
+        <ImageButton
+            android:id="@+id/settings_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="25dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_settings"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Panel de controles     -->
+        <LinearLayout
+            android:id="@+id/control_buttons_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/round_background_controls"
+            android:padding="8dp"
+            android:elevation="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Fila 1: Escala + Eje Y -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:text="⇕"
+                    android:textColor="#AAFFFFFF"
+                    android:textSize="12sp"
+                    android:gravity="center"/>
+
+                <ImageButton
+                    android:id="@+id/btn_decrease"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/ic_remove"
+                    android:contentDescription="Disminuir tamaño"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+                <ImageButton
+                    android:id="@+id/btn_increase"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/ic_add"
+                    android:contentDescription="Aumentar tamaño"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="32dp"
+                    android:layout_marginHorizontal="4dp"
+                    android:background="#44FFFFFF"/>
+
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:text="Y"
+                    android:textColor="#AAFFFFFF"
+                    android:textSize="12sp"
+                    android:gravity="center"/>
+
+                <ImageButton
+                    android:id="@+id/btn_rotate_y_left"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/ic_rotate"
+                    android:contentDescription="Rotar Y izquierda"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+                <ImageButton
+                    android:id="@+id/btn_rotate_y_right"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/ic_rotate"
+                    android:rotationY="180"
+                    android:contentDescription="Rotar Y derecha"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+            </LinearLayout>
+
+            <!-- Fila 2: Eje X + Eje Z -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:text="X"
+                    android:textColor="#AAFFFFFF"
+                    android:textSize="12sp"
+                    android:gravity="center"/>
+
+                <ImageButton
+                    android:id="@+id/btn_rotate_x_up"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/ic_rotate"
+                    android:rotation="270"
+                    android:contentDescription="Rotar X arriba"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+                <ImageButton
+                    android:id="@+id/btn_rotate_x_down"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/ic_rotate"
+                    android:rotation="90"
+                    android:contentDescription="Rotar X abajo"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="32dp"
+                    android:layout_marginHorizontal="4dp"
+                    android:background="#44FFFFFF"/>
+
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:text="Z"
+                    android:textColor="#AAFFFFFF"
+                    android:textSize="12sp"
+                    android:gravity="center"/>
+
+                <ImageButton
+                    android:id="@+id/btn_rotate_z_left"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/ic_rotate"
+                    android:rotation="180"
+                    android:contentDescription="Rotar Z izquierda"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+                <ImageButton
+                    android:id="@+id/btn_rotate_z_right"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/ic_rotate"
+                    android:contentDescription="Rotar Z derecha"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+            </LinearLayout>
+
+            <!-- Fila 3: Traslación X + Y -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:text="TX"
+                    android:textColor="#AAFFFFFF"
+                    android:textSize="10sp"
+                    android:gravity="center"/>
+
+                <ImageButton
+                    android:id="@+id/btn_trans_x_minus"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/arrow_left_svgrepo_com"
+                    android:contentDescription="Mover X -"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+                <ImageButton
+                    android:id="@+id/btn_trans_x_plus"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/arrow_right_svgrepo_com"
+                    android:contentDescription="Mover X +"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="32dp"
+                    android:layout_marginHorizontal="4dp"
+                    android:background="#44FFFFFF"/>
+
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:text="TY"
+                    android:textColor="#AAFFFFFF"
+                    android:textSize="10sp"
+                    android:gravity="center"/>
+
+                <ImageButton
+                    android:id="@+id/btn_trans_y_minus"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/arrow_down_svgrepo_com"
+                    android:contentDescription="Mover Y -"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+                <ImageButton
+                    android:id="@+id/btn_trans_y_plus"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/arrow_up_svgrepo_com"
+                    android:contentDescription="Mover Y +"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+            </LinearLayout>
+
+            <!-- Fila 4: Traslación Z + Reset -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:text="TZ"
+                    android:textColor="#AAFFFFFF"
+                    android:textSize="10sp"
+                    android:gravity="center"/>
+
+                <ImageButton
+                    android:id="@+id/btn_trans_z_minus"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/ic_arrow_diagonal_down"
+                    android:contentDescription="Mover Z -"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+                <ImageButton
+                    android:id="@+id/btn_trans_z_plus"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@drawable/ic_arrow_diagonal_up"
+                    android:contentDescription="Mover Z +"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="32dp"
+                    android:layout_marginHorizontal="4dp"
+                    android:background="#44FFFFFF"/>
+
+                <ImageButton
+                    android:id="@+id/btn_reset_coords"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="2dp"
+                    android:src="@android:drawable/ic_menu_revert"
+                    android:contentDescription="Resetear coordenadas"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"/>
+
+                <TextView
+                    android:layout_width="44dp"
+                    android:layout_height="wrap_content"
+                    android:text="Reset"
+                    android:textColor="#AAFFFFFF"
+                    android:textSize="10sp"
+                    android:gravity="center"/>
+
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Slideshow Overlay -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/slideshow_overlay"
+            android:layout_width="320dp"
+            android:layout_height="450dp"
+            android:visibility="gone"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="16dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:id="@+id/slide_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Información"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:textColor="@color/colorPrimary"
+                    android:layout_marginBottom="16dp"/>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#F5F5F5"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:id="@+id/slide_content"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:text="Contenido de la diapositiva..."
+                        android:gravity="center"
+                        android:padding="12dp"
+                        android:textColor="#333333"
+                        android:textSize="16sp"/>
+                </com.google.android.material.card.MaterialCardView>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_prev"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Anterior"
+                        app:icon="@drawable/arrow_left_svgrepo_com"
+                        android:textColor="@color/colorPrimary"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_next"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Siguiente"
+                        app:icon="@drawable/arrow_right_svgrepo_com"
+                        app:iconGravity="textEnd"
+                        android:textColor="@color/colorPrimary"/>
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_close"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Cerrar"
+                    android:layout_marginTop="8dp"
+                    android:backgroundTint="#EEEEEE"
+                    android:textColor="#333333"
+                    app:cornerRadius="12dp"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

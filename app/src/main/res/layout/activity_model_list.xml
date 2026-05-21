@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F0F2F5"
-    tools:context="com.example.proyectoarpdm.Activities.ModelListActivity">
+    tools:context="com.example.proyectoarpdm.activities.ModelListActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar"
