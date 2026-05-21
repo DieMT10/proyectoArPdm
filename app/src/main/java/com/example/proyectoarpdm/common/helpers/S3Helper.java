@@ -20,7 +20,6 @@ import java.io.InputStream;
 
 public class S3Helper {
     private static final String TAG = "S3Helper";
-
     private static final String ACCESS_KEY = "YOUR_ACCESS_KEY";
 private static final String SECRET_KEY = "YOUR_SECRET_KEY";
     private static final String BUCKET_NAME = "cobro-smart-s3test";
