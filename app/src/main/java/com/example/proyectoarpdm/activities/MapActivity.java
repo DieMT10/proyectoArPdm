@@ -10,7 +10,9 @@ import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -61,26 +63,41 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+
+public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, SensorEventListener {
 
     private static final String TAG = "MapActivity";
     private static final int LOCATION_PERMISSION_REQUEST = 1001;
 
     private GoogleMap mMap;
-    private Button btnAbrirAR;
-    private TextView txtEstadoGPS, txtDistancia;
+    private Button btnAbrirAR, btnNavMode;
+    private View navOverlay;
+    private ImageView navArrow, navModelIcon;
+    private TextView txtEstadoGPS, txtDistancia, navTxtDist;
+    
+    private SensorManager sensorManager;
+    private Sensor rotationSensor;
+    private float currentAzimuth = 0f;
+
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
     private DatabaseReference databaseReference;
     private Map<Marker, ARModel> markerModelMap = new HashMap<>();
     private List<ARModel> tempModelList = new ArrayList<>();
 
+    private ARModel selectedModel;
     private String modelId, modelName, modelUrl, slidesUrl;
     private ArrayList<String> slides;
     private LatLng puntoDestino;
+    private Location currentUbi;
     private boolean isCloseEnough = false;
     private boolean hasVibratedForThisPoint = false;
     private boolean isFirstLocationUpdate = true;
+    private boolean isNavModeActive = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,8 +105,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_map);
 
         btnAbrirAR = findViewById(R.id.btnAbrirAR);
+        btnNavMode = findViewById(R.id.btnNavMode);
+        navOverlay = findViewById(R.id.nav_overlay);
+        navArrow = findViewById(R.id.nav_arrow);
+        navModelIcon = findViewById(R.id.nav_model_icon);
+        navTxtDist = findViewById(R.id.nav_txt_dist);
         txtEstadoGPS = findViewById(R.id.txtEstadoGPS);
         txtDistancia = findViewById(R.id.txtDistancia);
+
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         databaseReference = FirebaseDatabase.getInstance().getReference("models");
@@ -102,12 +127,25 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             mapFragment.getMapAsync(this);
         }
 
-        // Cargar datos de Firebase inmediatamente
         loadLessonsFromFirebase();
 
         btnAbrirAR.setOnClickListener(v -> {
             if (isCloseEnough) downloadAndOpenModel();
             else Toast.makeText(this, "Acércate a menos de 50m", Toast.LENGTH_SHORT).show();
+        });
+
+        btnNavMode.setOnClickListener(v -> {
+            if (puntoDestino == null) {
+                Toast.makeText(this, "Selecciona un punto en el mapa primero", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            isNavModeActive = !isNavModeActive;
+            navOverlay.setVisibility(isNavModeActive ? View.VISIBLE : View.GONE);
+            btnNavMode.setText(isNavModeActive ? "❌ Cancelar Búsqueda" : "📍 Iniciar Búsqueda");
+            
+            if (isNavModeActive && selectedModel != null) {
+                Glide.with(this).load(selectedModel.getImagen()).circleCrop().into(navModelIcon);
+            }
         });
     }
 
@@ -252,14 +290,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     @Override
     public boolean onMarkerClick(@NonNull Marker marker) {
-        ARModel model = markerModelMap.get(marker);
-        if (model != null) {
+        selectedModel = markerModelMap.get(marker);
+        if (selectedModel != null) {
             puntoDestino = marker.getPosition();
-            modelId = model.getId();
-            modelName = model.getName();
-            modelUrl = model.getModelUrl();
-            slidesUrl = model.getSlidesUrl();
-            slides = new ArrayList<>(model.getSlides());
+            modelId = selectedModel.getId();
+            modelName = selectedModel.getName();
+            modelUrl = selectedModel.getModelUrl();
+            slidesUrl = selectedModel.getSlidesUrl();
+            slides = new ArrayList<>(selectedModel.getSlides());
             
             marker.showInfoWindow();
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(puntoDestino, 16));
@@ -270,7 +308,23 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         return false;
     }
 
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (!isNavModeActive || puntoDestino == null || currentUbi == null) return;
+        float azimuth = event.values[0]; 
+        Location targetLoc = new Location("target");
+        targetLoc.setLatitude(puntoDestino.latitude);
+        targetLoc.setLongitude(puntoDestino.longitude);
+        float bearing = currentUbi.bearingTo(targetLoc);
+        float rotation = bearing - azimuth;
+        navArrow.setRotation(rotation);
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+
     private void calcularDistancia(Location miUbi) {
+        currentUbi = miUbi;
         if (mMap != null && isFirstLocationUpdate) {
             LatLng userLatLng = new LatLng(miUbi.getLatitude(), miUbi.getLongitude());
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLatLng, 15));
@@ -290,10 +344,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         float dist = miUbi.distanceTo(target);
         txtDistancia.setText(String.format("GPS: %.4f, %.4f | Distancia: %dm", 
                 miUbi.getLatitude(), miUbi.getLongitude(), Math.round(dist)));
+        
+        if (isNavModeActive) {
+            navTxtDist.setText(Math.round(dist) + " m");
+        }
 
         if (dist <= 50) {
             txtEstadoGPS.setText("¡Llegaste a: " + modelName + "!");
-            if (!isCloseEnough && !hasVibratedForThisPoint) vibrarYNotificar();
+            if (!isCloseEnough && !hasVibratedForThisPoint) {
+                vibrarYNotificar();
+                if (isNavModeActive) downloadAndOpenModel();
+            }
             isCloseEnough = true;
             btnAbrirAR.setEnabled(true);
             btnAbrirAR.setAlpha(1.0f);
@@ -402,10 +463,20 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     @Override
-    protected void onResume() { super.onResume(); startLocationUpdates(); }
+    protected void onResume() { 
+        super.onResume(); 
+        startLocationUpdates(); 
+        if (rotationSensor != null) {
+            sensorManager.registerListener(this, rotationSensor, SensorManager.SENSOR_DELAY_UI);
+        }
+    }
 
     @Override
-    protected void onPause() { super.onPause(); fusedLocationClient.removeLocationUpdates(locationCallback); }
+    protected void onPause() { 
+        super.onPause(); 
+        fusedLocationClient.removeLocationUpdates(locationCallback);
+        sensorManager.unregisterListener(this);
+    }
 
     @SuppressWarnings("MissingPermission")
     private void startLocationUpdates() {

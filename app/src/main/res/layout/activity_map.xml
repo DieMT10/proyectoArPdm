@@ -59,19 +59,90 @@
                 android:textColor="#757575"
                 android:textSize="14sp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAbrirAR"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_marginTop="16dp"
-                android:text="🚀 Abrir Experiencia AR"
-                android:textAllCaps="false"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:cornerRadius="12dp"
-                android:backgroundTint="@color/colorPrimary"
-                android:textColor="@color/white" />
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp">
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnNavMode"
+                    android:layout_width="0dp"
+                    android:layout_height="60dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="📍 Iniciar Búsqueda"
+                    android:textAllCaps="false"
+                    app:cornerRadius="12dp"
+                    android:backgroundTint="@color/colorAccent"
+                    android:textColor="@color/white" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAbrirAR"
+                    android:layout_width="0dp"
+                    android:layout_height="60dp"
+                    android:layout_weight="1"
+                    android:text="🚀 Abrir AR"
+                    android:textAllCaps="false"
+                    app:cornerRadius="12dp"
+                    android:backgroundTint="@color/colorPrimary"
+                    android:textColor="@color/white"
+                    android:enabled="false"
+                    android:alpha="0.5"/>
+            </LinearLayout>
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Overlay de Búsqueda (Brújula) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/nav_overlay"
+        android:layout_width="200dp"
+        android:layout_height="250dp"
+        android:layout_marginTop="32dp"
+        android:visibility="gone"
+        app:cardCornerRadius="100dp"
+        app:cardElevation="20dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="#DDFFFFFF">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                app:cardCornerRadius="30dp"
+                app:cardElevation="0dp"
+                android:layout_marginBottom="16dp">
+                <ImageView
+                    android:id="@+id/nav_model_icon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"/>
+            </com.google.android.material.card.MaterialCardView>
+
+            <ImageView
+                android:id="@+id/nav_arrow"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/arrow_up_svgrepo_com"
+                app:tint="@color/colorPrimary"/>
+
+            <TextView
+                android:id="@+id/nav_txt_dist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="--- m"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorPrimary"/>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
