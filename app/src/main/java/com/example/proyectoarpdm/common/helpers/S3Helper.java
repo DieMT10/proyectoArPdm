@@ -20,18 +20,15 @@ import java.io.InputStream;
 
 public class S3Helper {
     private static final String TAG = "S3Helper";
-<<<<<<< HEAD
     private static final String ACCESS_KEY = "YOUR_ACCESS_KEY";
 private static final String SECRET_KEY = "YOUR_SECRET_KEY";
     private static final String BUCKET_NAME = "cobro-smart-s3test";
     private static final String REGION_NAME = "us-east-2"; // Para la URL
-=======
 
     private static final String A = "";
     private static final String Ak = "";
     private static final String Akb = "";
     private static final String AkbN = ""; // Para la URL
->>>>>>> 5cd114d (Refactoriza constantes de configuración en S3Helper)
 
     public interface UploadCallback {
         void onProgress(int id, long bytesCurrent, long bytesTotal);
