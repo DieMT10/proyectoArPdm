@@ -73,6 +73,7 @@ import java.nio.channels.Channels;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 public class HelloArActivity extends AppCompatActivity implements SampleRender.Renderer {
 
@@ -213,6 +214,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     };
 
     initPdfRenderer();
+    updateSlideUI();
 
     btnPrev.setOnClickListener(v -> {
       if (currentSlideIndex > 0) { currentSlideIndex--; updateSlideUI(); }
@@ -606,6 +608,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   }
 
   private void updateSlideUI() {
+    Log.d(TAG, "updateSlideUI: pdfRenderer is null? " + (pdfRenderer == null));
     if (pdfRenderer != null) {
         Bitmap cachedBitmap = pdfCache.get(currentSlideIndex);
         if (cachedBitmap != null) {
@@ -628,26 +631,36 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
             slideImage.setImageBitmap(bitmap);
         }
         slideImage.setVisibility(View.VISIBLE);
-        slideTitle.setText(getString(R.string.slide_page_title, currentSlideIndex + 1));
-        slideContent.setText(getString(R.string.slide_page_indicator, String.valueOf(currentSlideIndex + 1), String.valueOf(totalPages)));
+        slideTitle.setText("Presentación Educativa");
+        slideContent.setText(String.format(Locale.getDefault(), "Página %d de %d", currentSlideIndex + 1, totalPages));
     } else if (slidePages != null && slidePages.length > 0) {
         slideImage.setVisibility(View.GONE);
-        slideTitle.setText("Información");
-        slideContent.setText(slidePages[currentSlideIndex]);
+        String content = slidePages[currentSlideIndex];
+        // Si el contenido parece una URL de PDF, lo tratamos como carga pendiente
+        if (content != null && (content.toLowerCase().endsWith(".pdf") || content.contains(".pdf?"))) {
+            slideTitle.setText("Información");
+            slideContent.setText("Preparando presentación...");
+        } else {
+            slideTitle.setText("Información");
+            slideContent.setText(content);
+        }
     }
     btnPrev.setEnabled(currentSlideIndex > 0);
-    btnNext.setEnabled(currentSlideIndex < (pdfRenderer != null ? totalPages : slidePages.length) - 1);
+    btnNext.setEnabled(currentSlideIndex < (pdfRenderer != null ? totalPages : (slidePages != null ? slidePages.length : 0)) - 1);
   }
 
   private void initPdfRenderer() {
+    Log.d(TAG, "initPdfRenderer: slidesPath = " + slidesPath);
     if (slidesPath == null) return;
     try {
       File file = new File(slidesPath);
+      Log.d(TAG, "initPdfRenderer: file exists = " + file.exists() + ", path = " + file.getAbsolutePath());
       if (!file.exists()) return;
       parcelFileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
       if (parcelFileDescriptor != null) {
         pdfRenderer = new PdfRenderer(parcelFileDescriptor);
         totalPages = pdfRenderer.getPageCount();
+        Log.d(TAG, "initPdfRenderer: success, totalPages = " + totalPages);
       }
     } catch (IOException e) {
       Log.e(TAG, "Error initializing PdfRenderer", e);
