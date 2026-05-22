@@ -67,6 +67,10 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
+import androidx.appcompat.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
+
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, SensorEventListener {
 
     private static final String TAG = "MapActivity";
@@ -102,6 +106,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("Mapa Interactivo");
+        }
 
         btnAbrirAR = findViewById(R.id.btnAbrirAR);
         btnNavMode = findViewById(R.id.btnNavMode);
@@ -146,6 +156,21 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 Glide.with(this).load(selectedModel.getImagen()).circleCrop().into(navModelIcon);
             }
         });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_recognition) {
+            startActivity(new Intent(this, TestActivity.class));
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private void setupNavigation() {

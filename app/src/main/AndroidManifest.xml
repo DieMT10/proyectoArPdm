@@ -82,6 +82,13 @@
         android:theme="@style/AppTheme.NoActionBar">
     </activity>
 
+    <activity
+        android:name=".activities.TestActivity"
+        android:exported="true"
+        android:label="Modo Reconocimiento"
+        android:theme="@style/AppTheme.NoActionBar">
+    </activity>
+
     <meta-data android:name="com.google.ar.core" android:value="required" />
 
     <!-- Agregado para Google Maps -->

@@ -30,6 +30,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.appcompat.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
+
 public class ModelListActivity extends AppCompatActivity implements ModelAdapter.OnModelClickListener {
 
     private static final String TAG = "ModelListActivity";
@@ -43,6 +47,12 @@ public class ModelListActivity extends AppCompatActivity implements ModelAdapter
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_model_list);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("Modelos Educativos");
+        }
 
         progressBar = findViewById(R.id.progress_bar);
         RecyclerView recyclerView = findViewById(R.id.recycler_view);
@@ -72,6 +82,21 @@ public class ModelListActivity extends AppCompatActivity implements ModelAdapter
             }
             return itemId == R.id.nav_models;
         });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_recognition) {
+            startActivity(new Intent(this, TestActivity.class));
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private void loadModels() {

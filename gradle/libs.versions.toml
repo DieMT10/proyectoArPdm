@@ -16,6 +16,10 @@ playServicesLocation = "21.3.0"
 playServicesMaps = "20.0.0"
 glide = "4.16.0"
 awsS3 = "2.75.2"
+camerax = "1.4.0"
+mlkitObjectDetection = "17.0.2"
+tensorflowLite = "2.14.0"
+tensorflowLiteSupport = "0.4.4"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -34,6 +38,17 @@ play-services-maps = { group = "com.google.android.gms", name = "play-services-m
 glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
 glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glide" }
 aws-android-s3 = { group = "com.amazonaws", name = "aws-android-sdk-s3", version.ref = "awsS3" }
+camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
+camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
+camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
+mlkit-detection = { group = "com.google.mlkit", name = "object-detection", version.ref = "mlkitObjectDetection" }
+mlkit-labeling = { group = "com.google.mlkit", name = "image-labeling", version = "17.0.9" }
+androidx-palette = { group = "androidx.palette", name = "palette", version = "1.0.0" }
+mlkit-text = { group = "com.google.mlkit", name = "text-recognition", version = "16.0.0" }
+tensorflow-lite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tensorflowLite" }
+tensorflow-lite-support = { group = "org.tensorflow", name = "tensorflow-lite-support", version.ref = "tensorflowLiteSupport" }
+tensorflow-lite-task-vision = { group = "org.tensorflow", name = "tensorflow-lite-task-vision", version.ref = "tensorflowLiteSupport" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
