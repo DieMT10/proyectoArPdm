@@ -402,6 +402,10 @@ public class TestActivity extends AppCompatActivity {
                 crop.recycle();
                 return;
             }
+            
+            // Asegurar estado limpio tras un reset
+            if (pendingName == null) pendingName = "";
+            
             try {
                 float[] frameEmb  = embeddingHelper.getEmbedding(crop);
                 float[] frameHist = embeddingHelper.getColorHistogram(crop);
@@ -550,6 +554,10 @@ public class TestActivity extends AppCompatActivity {
 
         if (match == null) {
             isDialogShowing.set(false);
+            cameraExecutor.execute(() -> {
+                pendingName = "";
+                pendingCount = 0;
+            });
             return;
         }
 
@@ -564,8 +572,11 @@ public class TestActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("Cancelar", (dialog, which) -> {
                     isDialogShowing.set(false);
-                    pendingName = "";
-                    pendingCount = 0;
+                    // Resetear estado en el executor para garantizar orden
+                    cameraExecutor.execute(() -> {
+                        pendingName = "";
+                        pendingCount = 0;
+                    });
                     updateUI(false, "");
                 })
                 .setCancelable(false)
@@ -694,6 +705,12 @@ public class TestActivity extends AppCompatActivity {
     }
 
     private void launchHelloAR(String modelPath, String slidesPath, List<String> slides) {
+        // Reset desde executor antes de liberar el flag
+        cameraExecutor.execute(() -> {
+            pendingName = "";
+            pendingCount = 0;
+        });
+
         android.content.Intent intent = new android.content.Intent(this, com.example.proyectoarpdm.helloar.HelloArActivity.class);
         intent.putExtra("model_path", modelPath);
         if (slidesPath != null) intent.putExtra("slides_url", slidesPath);
@@ -713,8 +730,6 @@ public class TestActivity extends AppCompatActivity {
         }
         startActivity(intent);
         isDialogShowing.set(false);
-        pendingName = "";
-        pendingCount = 0;
     }
 
     // -----------------------------------------------------------------------
